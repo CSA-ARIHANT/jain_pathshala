@@ -612,7 +612,7 @@ if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
   loadClassDateManager();
-  
+  }
 }
 async function toggleClassDate(id,current){
 
@@ -640,7 +640,7 @@ async function toggleClassDate(id,current){
   }catch(e){
     toast('Error: '+e.message);
   }
-}
+
 }
 async function loadTeacherPinDropdown(){
   const sel=document.getElementById('trPinSel');
