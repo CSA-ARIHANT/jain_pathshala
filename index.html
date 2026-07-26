@@ -1006,7 +1006,10 @@ async function loadAttDates(){
   if(!el)return;if(el2)el2.innerHTML='';
   const my=document.getElementById('aMon')?.value;
   try{
-    const dates=await dbGet('class_dates?month_year=eq.'+my+'&order=class_date');
+    const dates=await dbGet(
+  'class_dates?month_year=eq.'+my+
+  '&is_active=eq.true&order=class_date'
+);
     if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info">इस माह कोई दिनांक नहीं। "+ कक्षा दिनांक" दबाएं।</div>';return;}
     el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें:</div>'+
       dates.map(d=>`<div class="chip" onclick="loadAttSheet('${d.id}','${d.class_date}')">📅 ${fmtDate(d.class_date)}</div>`).join('')+'</div>';
@@ -1109,7 +1112,10 @@ async function loadPerfDates(){
   if(!el)return;if(el2)el2.innerHTML='';
   const my=document.getElementById('pMon')?.value;
   try{
-    const dates=await dbGet('class_dates?month_year=eq.'+my+'&order=class_date');
+    const dates=await dbGet(
+  'class_dates?month_year=eq.'+my+
+  '&is_active=eq.true&order=class_date'
+);
     if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info">इस माह कोई दिनांक नहीं। "+ कक्षा दिनांक" दबाएं।</div>';return;}
     el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें:</div>'+
       dates.map(d=>`<div class="chip" onclick="loadPerfSheet('${d.id}','${d.class_date}')">📅 ${fmtDate(d.class_date)}</div>`).join('')+'</div>';
