@@ -612,6 +612,7 @@ if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
   loadClassDateManager();
+  
 }
 }
 
@@ -723,8 +724,8 @@ async function loadClassDateManager(){
 
   try{
     const dates=await dbGet(
-      'class_dates?order=class_date.desc'
-    );
+  'class_dates?select=id,class_date,is_active&order=class_date.desc'
+);
 
     if(!dates || !dates.length){
       el.innerHTML=
