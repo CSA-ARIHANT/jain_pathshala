@@ -608,7 +608,11 @@ function atab(t){
     document.getElementById('at-'+x)?.classList.toggle('active',x===t);
     document.getElementById('ap-'+x)?.classList.toggle('hidden',x!==t);
   });
-  if(t==='rs'){loadRsDates();loadTeacherPinDropdown();}
+if(t==='rs'){
+  loadRsDates();
+  loadTeacherPinDropdown();
+  loadClassDateManager();
+}
 }
 
 async function loadTeacherPinDropdown(){
@@ -713,6 +717,39 @@ async function loadRsDates(){
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
 }
 
+async function loadClassDateManager(){
+  const el=document.getElementById('cdManageDiv');
+  if(!el)return;
+
+  try{
+    const dates=await dbGet(
+      'class_dates?order=class_date.desc'
+    );
+
+    if(!dates || !dates.length){
+      el.innerHTML=
+        '<div class="alert alert-info">कोई दिनांक नहीं।</div>';
+      return;
+    }
+
+    el.innerHTML=dates.map(d=>`
+      <div class="att-row">
+        <div class="att-name">
+          📅 ${fmtDate(d.class_date)}
+          ${
+            d.is_active
+            ? '<span style="color:#16a34a;font-weight:700;"> ✅ Active</span>'
+            : '<span style="color:#dc2626;font-weight:700;"> ❌ Inactive</span>'
+          }
+        </div>
+      </div>
+    `).join('');
+
+  }catch(e){
+    el.innerHTML=
+      '<div class="alert alert-err">Error: '+e.message+'</div>';
+  }
+}  
 async function loadRsContent(cdId,date){
   const el=document.getElementById('rsContentDiv');
   if(!el)return;
