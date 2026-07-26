@@ -724,7 +724,25 @@ async function calcAwards(){
     for(const [sid] of attTop) await dbPost('monthly_awards',{month_year:my,award_type:'attendance',student_id:sid});
     const perf=await dbGet('performance?month_year=eq.'+my+'&select=student_id,rating');
     const pm={};(perf||[]).forEach(r=>{if(!pm[r.student_id])pm[r.student_id]=[];pm[r.student_id].push(r.rating);});
-    const perfTop=Object.entries(pm).filter(([id])=>!attSet.has(id)).map(([id,rs])=>[id,rs.reduce((a,b)=>a+b)/rs.length]).sort((a,b)=>b[1]-a[1]).slice(0,n);
+    const totalClasses=await dbGet( 'class_dates?month_year=eq.'+my+ '&is_active=eq.true&select=id'); const totalHeld=(totalClasses||[]).length||1;
+ const perfTop=Object.entries(pm)
+.filter(([id])=>!attSet.has(id))
+.map(([id,rs])=>{
+
+   const avgRating=
+      rs.reduce((a,b)=>a+b,0)/rs.length;
+
+   const attendanceRatio=
+      rs.length/totalHeld;
+
+   const finalScore=
+      avgRating*attendanceRatio;
+
+   return [id,finalScore];
+
+})
+.sort((a,b)=>b[1]-a[1])
+.slice(0,n);
     for(const [sid] of perfTop) await dbPost('monthly_awards',{month_year:my,award_type:'performance',student_id:sid});
     toast('🏆 पुरस्कार चुन लिए गए!');loadAwards();
   }catch(e){toast('Error: '+e.message);}
