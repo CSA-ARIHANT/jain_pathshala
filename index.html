@@ -612,7 +612,9 @@ if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
   loadClassDateManager();
-  async function toggleClassDate(id,current){
+  
+}
+async function toggleClassDate(id,current){
 
   const msg=current
     ? 'इस दिनांक को Inactive करना चाहते हैं?'
@@ -640,8 +642,6 @@ if(t==='rs'){
   }
 }
 }
-}
-
 async function loadTeacherPinDropdown(){
   const sel=document.getElementById('trPinSel');
   if(!sel)return;
