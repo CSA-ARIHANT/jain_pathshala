@@ -612,7 +612,33 @@ if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
   loadClassDateManager();
-  
+  async function toggleClassDate(id,current){
+
+  const msg=current
+    ? 'इस दिनांक को Inactive करना चाहते हैं?'
+    : 'इस दिनांक को Active करना चाहते हैं?';
+
+  if(!confirm(msg)) return;
+
+  try{
+
+    await dbPatch(
+      'class_dates?id=eq.'+id,
+      {is_active:!current}
+    );
+
+    toast(
+      current
+        ? '✅ दिनांक Inactive'
+        : '✅ दिनांक Active'
+    );
+
+    loadClassDateManager();
+
+  }catch(e){
+    toast('Error: '+e.message);
+  }
+}
 }
 }
 
@@ -734,16 +760,22 @@ async function loadClassDateManager(){
     }
 
     el.innerHTML=dates.map(d=>`
-      <div class="att-row">
-        <div class="att-name">
-          📅 ${fmtDate(d.class_date)}
-          ${
-            d.is_active
-            ? '<span style="color:#16a34a;font-weight:700;"> ✅ Active</span>'
-            : '<span style="color:#dc2626;font-weight:700;"> ❌ Inactive</span>'
-          }
-        </div>
-      </div>
+<div class="att-row">
+  <div class="att-name">
+    📅 ${fmtDate(d.class_date)}
+    ${
+      d.is_active
+      ? '<span style="color:#16a34a;font-weight:700;"> ✅ Active</span>'
+      : '<span style="color:#dc2626;font-weight:700;"> ❌ Inactive</span>'
+    }
+  </div>
+
+  <button
+    class="btn btn-gold btn-sm"
+    onclick="toggleClassDate('${d.id}',${d.is_active})">
+    ${d.is_active ? 'Deactivate' : 'Activate'}
+  </button>
+</div>
     `).join('');
 
   }catch(e){
