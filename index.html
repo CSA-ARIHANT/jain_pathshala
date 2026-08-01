@@ -391,7 +391,7 @@ async function loadPanchang(){
     const todayIso=today.toISOString().split('T')[0];
     const upcoming=await dbGet('class_dates?class_date=gte.'+todayIso+'&order=class_date&limit=1');
     if(upcoming&&upcoming.length){
-      nextClassHtml=`<br>📚 अगली कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
+      nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
     }
   }catch(e){}
 
