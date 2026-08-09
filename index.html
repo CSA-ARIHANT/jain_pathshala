@@ -16,7 +16,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--sky);color:var
 .logo{width:48px;height:48px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--navy);font-weight:900;border:2px solid var(--white);flex-shrink:0;}
 .title-group h1{font-size:20px;font-weight:700;color:var(--gold-light);}
 .title-group p{font-size:11px;color:#bae6fd;margin-top:2px;}
-.header-right{margin-left:auto;}
+.header-right{margin-left:auto;flex-shrink:0;}
+.title-group{min-width:0;flex:1;}
+.title-group h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:480px){
+  .app-header{padding:10px 12px;gap:8px;}
+  .logo{width:36px;height:36px;font-size:16px;}
+  .title-group h1{font-size:15px;}
+  .title-group p{font-size:9px;}
+  #liveClock{display:none!important;}
+  .btn-logout{padding:6px 10px;font-size:12px;}
+}
 .app-main{flex:1;padding:20px 16px;max-width:1100px;margin:0 auto;width:100%;}
 .app-footer{background:linear-gradient(135deg,#0c4a6e,#075985);border-top:3px solid var(--gold);text-align:center;padding:12px;font-size:13px;color:#bae6fd;font-weight:600;}
 /* BUTTONS 3D */
@@ -138,6 +148,7 @@ select option{background:#fff;}
   <div class="logo">ॐ</div>
   <div class="title-group"><h1>जैन पाठशाला</h1><p>श्री अरिहंत विकास समिति</p></div>
   <div id="liveClock" class="hidden" style="margin-left:16px;font-size:12px;color:#bae6fd;white-space:nowrap;"></div>
+  <div id="liveOnlineDiv" style="margin-left:12px;font-size:12px;color:#bae6fd;white-space:nowrap;">🟢 अभी ऑनलाइन: <b id="liveOnlineCount">-</b></div>
   <div class="header-right">
     <button class="btn-logout hidden" id="logoutBtn" onclick="logout()">लॉगआउट</button>
   </div>
@@ -146,9 +157,9 @@ select option{background:#fff;}
 <footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏</footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
+<script src="config.js"></script>
 <script>
-const SUPABASE_URL='https://txmifqaywbaszfugkmhy.supabase.co';
-const SUPABASE_KEY='sb_publishable_keHOrgXOXraRVceEy4te8A_tWA7EC6F';
+// SUPABASE_URL and SUPABASE_KEY now come from config.js (loaded above)
 const API=SUPABASE_URL+'/rest/v1/';
 const H={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
 
@@ -180,7 +191,45 @@ window.addEventListener('load',()=>{
   if(s)try{ME=JSON.parse(s);}catch(e){}
   ME?routeMe():showLanding();
   startClock();
+  liveTick();
+  setInterval(liveTick,20000);
 });
+
+// ── LIVE ONLINE COUNTER ──────────────────────
+function getSessionId(){
+  let sid=sessionStorage.getItem('jpSessionId');
+  if(!sid){
+    sid=(crypto.randomUUID?crypto.randomUUID():'s-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+    sessionStorage.setItem('jpSessionId',sid);
+  }
+  return sid;
+}
+
+async function liveTick(){
+  await heartbeat();
+  await loadLiveOnline();
+}
+
+async function heartbeat(){
+  try{
+    await dbUpsert('visitor_sessions?on_conflict=session_id',{session_id:getSessionId(),last_seen:new Date().toISOString()});
+    // Occasionally clear out very old sessions so the table doesn't grow forever
+    if(Math.random()<0.05){
+      const oldCutoff=new Date(Date.now()-86400000).toISOString();
+      dbDelete('visitor_sessions?last_seen=lt.'+oldCutoff).catch(()=>{});
+    }
+  }catch(e){console.warn('heartbeat failed (visitor_sessions table missing?):',e.message);}
+}
+
+async function loadLiveOnline(){
+  const el=document.getElementById('liveOnlineCount');
+  if(!el)return;
+  try{
+    const cutoff=new Date(Date.now()-90000).toISOString(); // active in last 90s
+    const rows=await dbGet('visitor_sessions?last_seen=gte.'+cutoff+'&select=session_id');
+    el.textContent=(rows||[]).length;
+  }catch(e){el.textContent='-';}
+}
 
 function startClock(){
   function tick(){
@@ -304,8 +353,8 @@ function monthLabel(my){
 }
 
 // ── 3. BIRTHDAY NOTIFICATION ──────────────────
-async function loadBirthdays(){
-  const el=document.getElementById('birthdayDiv');
+async function loadBirthdays(targetId='birthdayDiv'){
+  const el=document.getElementById(targetId);
   if(!el)return;
   try{
     const today=new Date();
@@ -388,10 +437,20 @@ async function loadPanchang(){
 
   let nextClassHtml='';
   try{
-    const todayIso=today.toISOString().split('T')[0];
-    const upcoming=await dbGet('class_dates?class_date=gte.'+todayIso+'&order=class_date&limit=1');
-    if(upcoming&&upcoming.length){
-      nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
+    const cfg=await dbGet('admin_config?select=next_class_id&limit=1');
+    const setId=cfg?.[0]?.next_class_id;
+    if(setId){
+      const picked=await dbGet('class_dates?id=eq.'+setId+'&select=class_date');
+      if(picked&&picked.length){
+        nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(picked[0].class_date)}</b>`;
+      }
+    }
+    if(!nextClassHtml){
+      const todayIso=today.toISOString().split('T')[0];
+      const upcoming=await dbGet('class_dates?class_date=gte.'+todayIso+'&is_active=eq.true&order=class_date&limit=1');
+      if(upcoming&&upcoming.length){
+        nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
+      }
     }
   }catch(e){}
 
@@ -488,13 +547,16 @@ async function showAdmin(){
       dbGet('students?order=name'),
       dbGet('admin_config?limit=1')
     ]);
-    const tc=teachers?.length||0,sc=students?.length||0,ac=cfg?.[0]?.award_count||2;
+    const tc=teachers?.length||0,sc=students?.length||0;
+    const acAtt=cfg?.[0]?.attendance_award_count??cfg?.[0]?.award_count??2;
+    const acPerf=cfg?.[0]?.performance_award_count??cfg?.[0]?.award_count??2;
     setMain(`
       <div class="section-title">👑 Admin Panel</div>
+      <div id="birthdayDivAdmin"></div>
       <div class="stat-grid">
         <div class="stat-card"><div class="sc-val">${tc}</div><div class="sc-label">शिक्षक</div></div>
         <div class="stat-card"><div class="sc-val">${sc}</div><div class="sc-label">विद्यार्थी</div></div>
-        <div class="stat-card"><div class="sc-val">${ac}</div><div class="sc-label">पुरस्कार/श्रेणी</div></div>
+        <div class="stat-card"><div class="sc-val">${acAtt}/${acPerf}</div><div class="sc-label">पुरस्कार (उप./प्रद.)</div></div>
       </div>
       <div class="tabs">
         <div class="tab active" id="at-t" onclick="atab('t')">शिक्षक</div>
@@ -530,31 +592,31 @@ async function showAdmin(){
         <div class="alert alert-info mb-3">सभी शिक्षकों को ये विद्यार्थी दिखते हैं — साझा कक्षा।</div>
         ${!sc?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>नाम</th><th>संबंध</th><th>मोबाइल</th><th>कक्षा</th></tr></thead>
+          <thead><tr><th>नाम</th><th>पिता</th><th>माता</th><th>कक्षा</th></tr></thead>
           <tbody>${students.map(s=>`<tr>
             <td><b>${s.salutation} ${s.name}</b></td>
-            <td>${s.relation_type||''} ${s.relation_name||''}</td>
-            <td>${s.phone||'-'}</td>
+            <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
+            <td>${s.mother_name||'-'}${s.mother_phone?' ('+s.mother_phone+')':''}</td>
             <td>${s.class||'-'}</td>
           </tr>`).join('')}</tbody>
         </table></div>`}
       </div>
 
       <div id="ap-aw" class="hidden">
-        <div class="card" style="max-width:400px;">
+        <div class="card" style="max-width:420px;">
           <div class="card-title">🏆 पुरस्कार संख्या</div>
-          <p style="font-size:13px;color:#64748b;margin-bottom:14px;">प्रति श्रेणी कितने विद्यार्थी?</p>
-          <div class="form-group"><label>संख्या</label><input type="number" id="acInp" value="${ac}" min="1" max="10"></div>
+          <p style="font-size:13px;color:#64748b;margin-bottom:14px;">हर श्रेणी में अलग-अलग कितने विद्यार्थी?</p>
+          <div class="form-group"><label>🏅 उपस्थिति पुरस्कार संख्या</label><input type="number" id="acAttInp" value="${acAtt}" min="1" max="10"></div>
+          <div class="form-group"><label>🌟 प्रदर्शन पुरस्कार संख्या</label><input type="number" id="acPerfInp" value="${acPerf}" min="1" max="10"></div>
           <button class="btn btn-gold" onclick="saveAC()">सहेजें</button>
           <div id="acMsg" class="mt-3"></div>
         </div>
       </div>
 
       <div id="ap-mn" class="hidden">
-        <div class="alert alert-warn mb-3">माह समाप्त होने के बाद ही पुरस्कार चुनें।</div>
+        <div class="alert alert-warn mb-3">माह समाप्त होने के बाद ही पुरस्कार चुनें। सूची अपने आप सुझाई गई है (टॉप वाले पहले से ✓) — आप चाहें तो बदल सकते हैं।</div>
         <div class="flex gap-3 items-center mb-3 flex-wrap">
-          <select id="mnSel" onchange="loadAwards()">${monthOpts()}</select>
-          <button class="btn btn-gold btn-sm" onclick="calcAwards()">🏆 चुनें</button>
+          <select id="mnSel" onchange="loadAwardSelection()">${monthOpts()}</select>
           <button class="btn btn-red btn-sm" onclick="resetAwards()">🔄 Reset</button>
         </div>
         <div id="awardsDiv"></div>
@@ -598,8 +660,9 @@ async function showAdmin(){
           <div id="pinMsg" class="mt-3"></div>
         </div>
       </div>`);
-    loadAwards();
+    loadAwardSelection();
     loadRsDates();
+    loadBirthdays('birthdayDivAdmin');
   }catch(e){setMain(`<div class="alert alert-err">Error: ${e.message}</div>`);}
 }
 
@@ -666,7 +729,10 @@ async function doTeacherPinReset(){
 
 async function saveAC(){
   try{
-    await dbPatch('admin_config?id=eq.1',{award_count:parseInt(g('acInp'))||2});
+    await dbPatch('admin_config?id=eq.1',{
+      attendance_award_count:parseInt(g('acAttInp'))||2,
+      performance_award_count:parseInt(g('acPerfInp'))||2
+    });
     document.getElementById('acMsg').innerHTML='<div class="alert alert-ok">✅ सहेज लिया!</div>';
   }catch(e){document.getElementById('acMsg').innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
 }
@@ -689,63 +755,152 @@ async function delTeacher(id,name){
   catch(e){toast('Error: '+e.message);}
 }
 
-async function loadAwards(){
-  const el=document.getElementById('awardsDiv');if(!el)return;
+// Shared ranking computation — SAME formula as before, used by both
+// the teacher's read-only ranking tables and the admin's manual selection screen.
+async function computeAttendanceRanking(my){
+  const monthDates=await dbGet('class_dates?month_year=eq.'+my+'&select=id,class_date,duration_minutes,is_active');
+  const durById={};(monthDates||[]).forEach(d=>{durById[d.id]=d.duration_minutes||60;});
+  // Only classes that are active AND have actually happened (not future-scheduled) count toward the total
+  const heldActive=(monthDates||[]).filter(d=>d.is_active&&d.class_date<=today());
+  const activeIds=new Set(heldActive.map(d=>d.id));
+  const totalMinutes=heldActive.reduce((s,d)=>s+(d.duration_minutes||60),0)||1;
+
+  const att=await dbGet('attendance?month_year=eq.'+my+'&status=eq.present&select=student_id,class_date_id,arrival_time,departure_time');
+  const timeToMin=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;};
+  const minutesByStu={};
+  (att||[]).forEach(r=>{
+    if(!activeIds.has(r.class_date_id))return; // skip deactivated classes entirely
+    const dur=durById[r.class_date_id]||60;
+    const a=timeToMin(r.arrival_time),d=timeToMin(r.departure_time);
+    let mins=dur; // fallback: full credit if times weren't recorded
+    if(a!=null&&d!=null){mins=Math.max(0,Math.min(dur,d-a));}
+    minutesByStu[r.student_id]=(minutesByStu[r.student_id]||0)+mins;
+  });
+  const students=await dbGet('students?select=id,name,salutation');
+  const infoById={};(students||[]).forEach(s=>infoById[s.id]=s);
+  return Object.entries(minutesByStu).map(([sid,mins])=>({
+    id:sid,name:infoById[sid]?.name||'',salutation:infoById[sid]?.salutation||'',
+    mins,ratio:mins/totalMinutes
+  })).sort((a,b)=>b.ratio-a.ratio);
+}
+
+async function computePerformanceRanking(my){
+  const monthDates=await dbGet('class_dates?month_year=eq.'+my+'&select=id,class_date,is_active');
+  const activeIds=new Set((monthDates||[]).filter(d=>d.is_active&&d.class_date<=today()).map(d=>d.id));
+  const perf=await dbGet('performance?month_year=eq.'+my+'&select=student_id,rating,class_date_id');
+  const pm={};(perf||[]).forEach(r=>{
+    if(!activeIds.has(r.class_date_id))return; // skip deactivated / not-yet-happened classes
+    if(!pm[r.student_id])pm[r.student_id]=[];pm[r.student_id].push(r.rating);
+  });
+  const totalHeld=(monthDates||[]).filter(d=>d.is_active&&d.class_date<=today()).length||1;
+
+  const ids=Object.keys(pm);
+  const infoById={};let ageDaysById={};
+  if(ids.length){
+    const studentsInfo=await dbGet('students?id=in.('+ids.join(',')+')&select=id,name,salutation,dob');
+    const todayD=new Date();
+    (studentsInfo||[]).forEach(s=>{
+      infoById[s.id]=s;
+      if(s.dob){const d=new Date(s.dob+'T00:00:00');ageDaysById[s.id]=(todayD-d)/(1000*60*60*24);}
+    });
+  }
+  const validAges=Object.values(ageDaysById);
+  const minAgeDays=validAges.length?Math.min(...validAges):0;
+  const maxAgeDays=validAges.length?Math.max(...validAges):0;
+
+  return ids.map(id=>{
+    const rs=pm[id];
+    const avgRating=rs.reduce((a,b)=>a+b,0)/rs.length;
+    const attendanceRatio=rs.length/totalHeld;
+    const baseScore=avgRating*attendanceRatio;
+    const age=ageDaysById[id];
+    let ageBonus=0;
+    if(age!=null && maxAgeDays>minAgeDays){
+      ageBonus=(maxAgeDays-age)/(maxAgeDays-minAgeDays)*0.10; // up to 10% for youngest
+    }
+    return{
+      id,name:infoById[id]?.name||'',salutation:infoById[id]?.salutation||'',
+      avgRating,ratingCount:rs.length,score:baseScore*(1+ageBonus)
+    };
+  }).sort((a,b)=>b.score-a.score);
+}
+
+// ── ADMIN: interactive manual award selection (auto-suggested, editable) ──
+let _awRankAtt=[],_awRankPerf=[];
+
+async function loadAwardSelection(){
   const my=document.getElementById('mnSel')?.value;if(!my)return;
+  const el=document.getElementById('awardsDiv');if(!el)return;
+  el.innerHTML='<div class="spinner"></div>';
   try{
-    const data=await dbGet('monthly_awards?month_year=eq.'+my+'&select=award_type,student_id,students(name,salutation)');
-    if(!data||!data.length){el.innerHTML='<div class="empty"><div>🏆</div><p>इस माह पुरस्कार नहीं चुने गए।</p></div>';return;}
-    const att=data.filter(x=>x.award_type==='attendance'),perf=data.filter(x=>x.award_type==='performance');
-    el.innerHTML=`<div class="form-row">
-      <div class="award-card"><div class="tr">🏅</div><h4>सर्वश्रेष्ठ उपस्थिति</h4>${att.map(x=>`<p style="color:var(--gold-light);font-weight:700;margin-top:6px;">${x.students?.salutation||''} ${x.students?.name||''}</p>`).join('')}</div>
-      <div class="award-card"><div class="tr">⭐</div><h4>सर्वश्रेष्ठ प्रदर्शन</h4>${perf.map(x=>`<p style="color:var(--gold-light);font-weight:700;margin-top:6px;">${x.students?.salutation||''} ${x.students?.name||''}</p>`).join('')}</div>
-    </div>`;
+    const[cfg,existing,attRanked,perfRanked]=await Promise.all([
+      dbGet('admin_config?select=attendance_award_count,performance_award_count&limit=1'),
+      dbGet('monthly_awards?month_year=eq.'+my+'&select=award_type,student_id'),
+      computeAttendanceRanking(my),
+      computePerformanceRanking(my)
+    ]);
+    _awRankAtt=attRanked;_awRankPerf=perfRanked;
+    const attN=cfg?.[0]?.attendance_award_count||2;
+    const perfN=cfg?.[0]?.performance_award_count||2;
+    const savedAtt=new Set((existing||[]).filter(x=>x.award_type==='attendance').map(x=>x.student_id));
+    const savedPerf=new Set((existing||[]).filter(x=>x.award_type==='performance').map(x=>x.student_id));
+    const attChecked=savedAtt.size?savedAtt:new Set(attRanked.slice(0,attN).map(r=>r.id));
+    const perfChecked=savedPerf.size?savedPerf:new Set(perfRanked.slice(0,perfN).map(r=>r.id));
+
+    const attRows=attRanked.map((r,i)=>`<tr>
+      <td style="text-align:center;color:#64748b;">${i+1}</td>
+      <td style="text-align:center;"><input type="checkbox" id="aw-att-${r.id}" ${attChecked.has(r.id)?'checked':''}></td>
+      <td>${r.salutation} ${r.name}</td>
+      <td style="text-align:right;font-weight:600;">${(r.ratio*100).toFixed(1)}%</td>
+    </tr>`).join('');
+    const perfRows=perfRanked.map((r,i)=>`<tr>
+      <td style="text-align:center;color:#64748b;">${i+1}</td>
+      <td style="text-align:center;"><input type="checkbox" id="aw-perf-${r.id}" ${perfChecked.has(r.id)?'checked':''}></td>
+      <td>${r.salutation} ${r.name}</td>
+      <td style="text-align:right;font-weight:600;">★${r.avgRating.toFixed(1)}</td>
+    </tr>`).join('');
+
+    el.innerHTML=`
+      <div class="card mb-3">
+        <div class="card-title">🏅 उपस्थिति रैंकिंग — टॉप ${attN} पहले से ✓ (बदल सकते हैं)</div>
+        <div style="max-height:320px;overflow-y:auto;">
+          <table><thead><tr><th>#</th><th>चुनें</th><th>नाम</th><th>%</th></tr></thead>
+          <tbody>${attRows||'<tr><td colspan="4">इस माह कोई उपस्थिति डेटा नहीं</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-title">🌟 प्रदर्शन रैंकिंग — टॉप ${perfN} पहले से ✓ (बदल सकते हैं)</div>
+        <div style="max-height:320px;overflow-y:auto;">
+          <table><thead><tr><th>#</th><th>चुनें</th><th>नाम</th><th>औसत</th></tr></thead>
+          <tbody>${perfRows||'<tr><td colspan="4">इस माह कोई रेटिंग डेटा नहीं</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="saveAwardSelection()">✅ पुरस्कार सहेजें</button>
+      <div id="awSaveMsg" class="mt-3"></div>`;
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
+}
+
+async function saveAwardSelection(){
+  const my=document.getElementById('mnSel')?.value;if(!my)return;
+  const msgEl=document.getElementById('awSaveMsg');
+  try{
+    const attSel=_awRankAtt.filter(r=>document.getElementById('aw-att-'+r.id)?.checked).map(r=>r.id);
+    const perfSel=_awRankPerf.filter(r=>document.getElementById('aw-perf-'+r.id)?.checked).map(r=>r.id);
+    await dbDelete('monthly_awards?month_year=eq.'+my);
+    for(const sid of attSel) await dbPost('monthly_awards',{month_year:my,award_type:'attendance',student_id:sid});
+    for(const sid of perfSel) await dbPost('monthly_awards',{month_year:my,award_type:'performance',student_id:sid});
+    if(msgEl)msgEl.innerHTML='<div class="alert alert-ok">✅ पुरस्कार सहेजे गए!</div>';
+    toast('🏆 पुरस्कार सहेजे गए!');
+  }catch(e){
+    if(msgEl)msgEl.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';
+  }
 }
 
 async function resetAwards(){
   const my=document.getElementById('mnSel')?.value;
   if(!confirm(`${my} के पुरस्कार reset करें?`))return;
-  try{await dbDelete('monthly_awards?month_year=eq.'+my);loadAwards();toast('Reset हो गया');}
+  try{await dbDelete('monthly_awards?month_year=eq.'+my);loadAwardSelection();toast('Reset हो गया');}
   catch(e){toast('Error: '+e.message);}
-}
-
-async function calcAwards(){
-  const my=document.getElementById('mnSel')?.value;
-  if(!confirm(`${my} के पुरस्कार चुनें?`))return;
-  try{
-    const cfg=await dbGet('admin_config?select=award_count&limit=1');
-    const n=cfg?.[0]?.award_count||2;
-    await dbDelete('monthly_awards?month_year=eq.'+my);
-    const att=await dbGet('attendance?month_year=eq.'+my+'&status=eq.present&select=student_id');
-    const ac={};(att||[]).forEach(r=>{ac[r.student_id]=(ac[r.student_id]||0)+1;});
-    const attTop=Object.entries(ac).sort((a,b)=>b[1]-a[1]).slice(0,n);
-    const attSet=new Set(attTop.map(x=>x[0]));
-    for(const [sid] of attTop) await dbPost('monthly_awards',{month_year:my,award_type:'attendance',student_id:sid});
-    const perf=await dbGet('performance?month_year=eq.'+my+'&select=student_id,rating');
-    const pm={};(perf||[]).forEach(r=>{if(!pm[r.student_id])pm[r.student_id]=[];pm[r.student_id].push(r.rating);});
-    const totalClasses=await dbGet( 'class_dates?month_year=eq.'+my+ '&is_active=eq.true&select=id'); const totalHeld=(totalClasses||[]).length||1;
- const perfTop=Object.entries(pm)
-.filter(([id])=>!attSet.has(id))
-.map(([id,rs])=>{
-
-   const avgRating=
-      rs.reduce((a,b)=>a+b,0)/rs.length;
-
-   const attendanceRatio=
-      rs.length/totalHeld;
-
-   const finalScore=
-      avgRating*attendanceRatio;
-
-   return [id,finalScore];
-
-})
-.sort((a,b)=>b[1]-a[1])
-.slice(0,n);
-    for(const [sid] of perfTop) await dbPost('monthly_awards',{month_year:my,award_type:'performance',student_id:sid});
-    toast('🏆 पुरस्कार चुन लिए गए!');loadAwards();
-  }catch(e){toast('Error: '+e.message);}
 }
 
 // ADMIN RESET
@@ -755,20 +910,29 @@ async function loadRsDates(){
   if(!el)return;if(el2)el2.innerHTML='';
   const my=document.getElementById('rsMon')?.value;
   try{
-    const dates=await dbGet('class_dates?month_year=eq.'+my+'&order=class_date');
-    if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info mt-3">इस माह कोई कक्षा तिथि नहीं।</div>';return;}
+    const dates=await dbGet('class_dates?month_year=eq.'+my+'&is_active=eq.true&order=class_date');
+    if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info mt-3">इस माह कोई सक्रिय कक्षा तिथि नहीं।</div>';return;}
     el.innerHTML='<div class="mt-3"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">कक्षा दिनांक चुनें:</div>'+
-      dates.map(d=>`<div class="chip" onclick="loadRsContent('${d.id}','${d.class_date}')">📅 ${fmtDate(d.class_date)}</div>`).join('')+'</div>';
+      dates.map(d=>{
+        const isFuture=d.class_date>today();
+        return `<div class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenRsContent('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</div>`;
+      }).join('')+'</div>';
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
 }
 
+function tryOpenRsContent(cdId,date){
+  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी उपस्थिति/रेटिंग दर्ज नहीं की जा सकती।');return;}
+  loadRsContent(cdId,date);
+}
+
+let _cdActiveTab='active';
 async function loadClassDateManager(){
   const el=document.getElementById('cdManageDiv');
   if(!el)return;
 
   try{
     const dates=await dbGet(
-  'class_dates?select=id,class_date,is_active&order=class_date.desc'
+  'class_dates?select=id,class_date,is_active,duration_minutes&order=class_date.desc'
 );
 
     if(!dates || !dates.length){
@@ -776,41 +940,81 @@ async function loadClassDateManager(){
         '<div class="alert alert-info">कोई दिनांक नहीं।</div>';
       return;
     }
-
-    el.innerHTML=dates.map(d=>`
-<div class="att-row">
-  <div class="att-name">
-    📅 ${fmtDate(d.class_date)}
-    ${
-      d.is_active
-      ? '<span style="color:#16a34a;font-weight:700;"> ✅ Active</span>'
-      : '<span style="color:#dc2626;font-weight:700;"> ❌ Inactive</span>'
-    }
-  </div>
-
-  <button
-    class="btn btn-gold btn-sm"
-    onclick="toggleClassDate('${d.id}',${d.is_active})">
-    ${d.is_active ? 'Deactivate' : 'Activate'}
-  </button>
-</div>
-    `).join('');
-
+    window._cdAll=dates;
+    renderCdManager();
   }catch(e){
     el.innerHTML=
       '<div class="alert alert-err">Error: '+e.message+'</div>';
   }
-}  
+}
+
+function cdTab(t){
+  _cdActiveTab=t;
+  renderCdManager();
+}
+
+function renderCdManager(){
+  const el=document.getElementById('cdManageDiv');
+  if(!el)return;
+  const dates=window._cdAll||[];
+  const active=dates.filter(d=>d.is_active&&d.class_date<=today());
+  const inactive=dates.filter(d=>!d.is_active);
+  const list=_cdActiveTab==='active'?active:inactive;
+
+  const rowHtml=d=>`
+<div class="att-row">
+  <div class="att-name">
+    📅 ${fmtDate(d.class_date)}
+    <span style="font-size:11px;color:#64748b;margin-left:6px;">⏱️ <span id="cddur-${d.id}">${d.duration_minutes||60}</span> मिनट</span>
+    <button class="btn btn-ghost btn-sm" style="padding:2px 8px;margin-left:6px;" onclick="editDuration('${d.id}',${d.duration_minutes||60},'loadClassDateManager')">✏️</button>
+  </div>
+  <button class="btn btn-gold btn-sm" onclick="toggleClassDate('${d.id}',${d.is_active})">
+    ${d.is_active ? 'Deactivate' : 'Activate'}
+  </button>
+</div>`;
+
+  el.innerHTML=`
+    <div class="tabs" style="margin-bottom:10px;">
+      <div class="tab ${_cdActiveTab==='active'?'active':''}" onclick="cdTab('active')">✅ Active (${active.length})</div>
+      <div class="tab ${_cdActiveTab==='inactive'?'active':''}" onclick="cdTab('inactive')">❌ Inactive (${inactive.length})</div>
+    </div>
+    <div style="max-height:360px;overflow-y:auto;border:1.5px solid var(--sky-mid);border-radius:8px;padding:4px 10px;">
+      ${list.length?list.map(rowHtml).join(''):'<div class="alert alert-info">कोई दिनांक नहीं।</div>'}
+    </div>`;
+}
+
+// Shared duration editor — used by both Admin's Class Date Manager and Teacher's date chips
+function editDuration(id,current,refreshFn){
+  openModal(`
+    <h3>⏱️ कक्षा अवधि (मिनट)</h3>
+    <div class="form-group"><label>अवधि (1-69 मिनट)</label><input type="number" id="durInp" value="${current}" min="1" max="69"></div>
+    <div id="durErr"></div>
+    <div class="flex gap-3 mt-3">
+      <button class="btn btn-gold btn-w" onclick="doSetDuration('${id}','${refreshFn}')">✅ सहेजें</button>
+      <button class="btn btn-ghost" onclick="closeModal()">रद्द</button>
+    </div>`);
+}
+async function doSetDuration(id,refreshFn){
+  const val=parseInt(g('durInp'));
+  if(!val||val<1||val>69){merr('durErr','1 से 69 के बीच मिनट दर्ज करें।');return;}
+  try{
+    await dbPatch('class_dates?id=eq.'+id,{duration_minutes:val});
+    closeModal();
+    toast('⏱️ अवधि सहेजी गई ✓');
+    if(refreshFn&&window[refreshFn])window[refreshFn]();
+  }catch(e){merr('durErr','Error: '+e.message);}
+}
 async function loadRsContent(cdId,date){
   const el=document.getElementById('rsContentDiv');
   if(!el)return;
   el.innerHTML='<div class="spinner"></div>';
   try{
-    const[stus,atts,perfs]=await Promise.all([
+    const[stusAll,atts,perfs]=await Promise.all([
       dbGet('students?order=name'),
       dbGet('attendance?class_date_id=eq.'+cdId),
       dbGet('performance?class_date_id=eq.'+cdId)
     ]);
+    const stus=(stusAll||[]).filter(s=>!s.joining_date||s.joining_date<=date);
     const am={},pm={};
     (atts||[]).forEach(r=>am[r.student_id]=r);
     (perfs||[]).forEach(r=>pm[r.student_id]=r);
@@ -842,6 +1046,11 @@ async function loadRsContent(cdId,date){
       const selR=document.createElement('select');
       selR.id='rsr-'+s.id;
       selR.style.cssText='padding:5px 8px;font-size:12px;min-width:100px;background:#f0f9ff;border:1.5px solid #7dd3fc;color:var(--navy-mid);border-radius:6px;';
+      if(curSt!=='present'){selR.disabled=true;selR.title='केवल उपस्थित विद्यार्थी को रेट किया जा सकता है';}
+      selA.onchange=()=>{
+        if(selA.value!=='present'){selR.value='0';selR.disabled=true;}
+        else{selR.disabled=false;}
+      };
       [['0','— नहीं —'],['1','★ 1'],['2','★★ 2'],['3','★★★ 3'],['4','★★★★ 4'],['5','★★★★★ 5']].forEach(([v,t])=>{
         const o=document.createElement('option');o.value=v;o.textContent=t;
         if(parseInt(v)===curRt)o.selected=true;selR.appendChild(o);
@@ -883,11 +1092,18 @@ async function adminSave(sid,cdId,date){
       } else {
         const postResult=await dbPost('attendance',{student_id:sid,class_date_id:cdId,date,status,month_year:my,locked:false,edited_once:false});
         console.log('POST attendance returned:',postResult);
+        try{
+          const stu=await dbGet('students?id=eq.'+sid+'&select=joining_date');
+          if(stu?.[0]&&!stu[0].joining_date){
+            await dbPatch('students?id=eq.'+sid,{joining_date:date});
+          }
+        }catch(e){console.error('auto joining_date failed:',e);}
       }
     }
 
-    // PERFORMANCE: if rating is 0 ("— नहीं —"), DELETE the record (clear it)
-    if(rating===0){
+    // PERFORMANCE: only allowed when status is 'present'. If rating is 0, or status isn't
+    // present, DELETE the record (clear it) — prevents rating an absent/unmarked student.
+    if(rating===0||status!=='present'){
       const delResult=await dbDelete('performance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId);
       console.log('DELETE performance (cleared):',delResult);
     } else {
@@ -991,6 +1207,7 @@ async function showTeacher(){
     window._stus=students||[];
     const t=ME.data;
     setMain(`
+      <div id="birthdayDivTeacher"></div>
       <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
         <div>
           <div class="section-title" style="margin:0;">📚 ${t.salutation} ${t.name}</div>
@@ -1006,19 +1223,20 @@ async function showTeacher(){
         <div class="tab active" id="tt-s" onclick="ttab('s')">विद्यार्थी</div>
         <div class="tab" id="tt-a" onclick="ttab('a')">उपस्थिति</div>
         <div class="tab" id="tt-p" onclick="ttab('p')">रेटिंग</div>
+        <div class="tab" id="tt-r" onclick="ttab('r')">🏆 रैंकिंग</div>
       </div>
 
       <div id="tp-s">
         ${!window._stus.length?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>नाम</th><th>संबंध</th><th>📱 मोबाइल</th><th>जन्म तिथि</th><th>कक्षा</th><th>पता</th><th>कार्य</th></tr></thead>
+          <thead><tr><th>नाम</th><th>पिता (📱)</th><th>माता (📱)</th><th>जन्म तिथि</th><th>कक्षा</th><th>प्रवेश तिथि</th><th>कार्य</th></tr></thead>
           <tbody>${window._stus.map(s=>`<tr>
             <td><b>${s.salutation} ${s.name}</b></td>
-            <td>${s.relation_type||''} ${s.relation_name||''}</td>
-            <td>${s.phone||'-'}</td>
+            <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
+            <td>${s.mother_name||'-'}${s.mother_phone?' ('+s.mother_phone+')':''}</td>
             <td>${fmtDate(s.dob)}</td>
             <td>${s.class||'-'}</td>
-            <td>${s.address||'-'}</td>
+            <td>${s.joining_date?fmtDate(s.joining_date):'-'}</td>
             <td><div class="flex gap-2">
               <button class="btn btn-sky btn-sm" onclick='mEditStudent(${JSON.stringify(s)})'>✏️</button>
               <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">🗑️</button>
@@ -1043,13 +1261,57 @@ async function showTeacher(){
         </div>
         <div id="perfDatesDiv"></div>
         <div id="perfSheetDiv"></div>
+      </div>
+
+      <div id="tp-r" class="hidden">
+        <div id="teacherRankDiv"><div class="spinner"></div></div>
       </div>`);
     loadAttDates();loadPerfDates();
+    loadBirthdays('birthdayDivTeacher');
   }catch(e){setMain('<div class="alert alert-err">Error: '+e.message+'</div>');}
 }
 
+async function loadTeacherRankings(){
+  const el=document.getElementById('teacherRankDiv');
+  if(!el)return;
+  el.innerHTML='<div class="spinner"></div>';
+  try{
+    const my=new Date().toISOString().substring(0,7);
+    const[attRanked,perfRanked]=await Promise.all([
+      computeAttendanceRanking(my),
+      computePerformanceRanking(my)
+    ]);
+    const attRows=attRanked.map((r,i)=>`<tr>
+      <td style="text-align:center;color:#64748b;">${i+1}</td>
+      <td>${r.salutation} ${r.name}</td>
+      <td style="text-align:right;font-weight:600;">${(r.ratio*100).toFixed(1)}%</td>
+    </tr>`).join('');
+    const perfRows=perfRanked.map((r,i)=>`<tr>
+      <td style="text-align:center;color:#64748b;">${i+1}</td>
+      <td>${r.salutation} ${r.name}</td>
+      <td style="text-align:right;font-weight:600;">★${r.avgRating.toFixed(1)}</td>
+    </tr>`).join('');
+    el.innerHTML=`
+      <div class="card mb-3">
+        <div class="card-title">🏅 उपस्थिति रैंकिंग — ${monthLabel(my)}</div>
+        <div style="max-height:340px;overflow-y:auto;">
+          <table><thead><tr><th>#</th><th>नाम</th><th>%</th></tr></thead>
+          <tbody>${attRows||'<tr><td colspan="3">इस माह कोई डेटा नहीं</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class="card mb-3">
+        <div class="card-title">🌟 प्रदर्शन रैंकिंग — ${monthLabel(my)}</div>
+        <div style="max-height:340px;overflow-y:auto;">
+          <table><thead><tr><th>#</th><th>नाम</th><th>औसत</th></tr></thead>
+          <tbody>${perfRows||'<tr><td colspan="3">इस माह कोई डेटा नहीं</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#94a3b8;">जैसे-जैसे कक्षाएँ होती जाएंगी, रैंकिंग अपने आप अपडेट होती रहेगी।</p>`;
+  }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
+}
+
 function ttab(t){
-  ['s','a','p'].forEach(x=>{
+  ['s','a','p','r'].forEach(x=>{
     document.getElementById('tt-'+x)?.classList.toggle('active',x===t);
     document.getElementById('tp-'+x)?.classList.toggle('hidden',x!==t);
   });
@@ -1060,15 +1322,16 @@ function ttab(t){
     if(am&&pm&&pm.value!==am)pm.value=am;
     loadPerfDates();
   }
+  if(t==='r')loadTeacherRankings();
 }
 
 function mAddClassDate(tab){
   openModal(`
     <h3>📅 कक्षा तिथि जोड़ें</h3>
     <div class="confirm-box"><div class="ci">⚠️</div>
-      <p><b>सावधान!</b> सही दिनांक चुनें जिस दिन कक्षा हुई।<br>यह दिनांक सभी शिक्षकों को दिखेगी।</p>
+      <p><b>सावधान!</b> सही दिनांक चुनें। भविष्य की तारीख डालने पर वह होम पेज पर "अगली कक्षा" के रूप में दिखेगी।<br>यह दिनांक सभी शिक्षकों को दिखेगी।</p>
     </div>
-    <div class="form-group"><label>कक्षा का दिनांक *</label><input type="date" id="cdDate" max="${today()}"></div>
+    <div class="form-group"><label>कक्षा का दिनांक *</label><input type="date" id="cdDate"></div>
     <div id="cderr"></div>
     <div class="flex gap-3 mt-3">
       <button class="btn btn-gold btn-w" onclick="doAddClassDate('${tab}')">✅ जोड़ें</button>
@@ -1079,10 +1342,15 @@ function mAddClassDate(tab){
 async function doAddClassDate(tab){
   const date=g('cdDate');
   if(!date){merr('cderr','दिनांक आवश्यक।');return;}
-  if(date>today()){merr('cderr','भविष्य का दिनांक नहीं।');return;}
   const my=date.substring(0,7);
   try{
-    await dbPost('class_dates',{class_date:date,month_year:my});
+    const inserted=await dbPost('class_dates',{class_date:date,month_year:my});
+    const newId=inserted?.[0]?.id;
+    // If this is a future date, make it the homepage's "next class" automatically
+    if(newId && date>today()){
+      try{await dbPatch('admin_config?id=eq.1',{next_class_id:newId});}
+      catch(e){console.error('set next_class_id failed:',e);}
+    }
     closeModal();
     if(tab==='a'){document.getElementById('aMon').value=my;loadAttDates();}
     else{document.getElementById('pMon').value=my;loadPerfDates();}
@@ -1100,23 +1368,31 @@ async function loadAttDates(){
   try{
     const dates=await dbGet(
   'class_dates?month_year=eq.'+my+
-  '&is_active=eq.true&order=class_date'
+  '&is_active=eq.true&select=id,class_date,duration_minutes&order=class_date'
 );
     if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info">इस माह कोई दिनांक नहीं। "+ कक्षा दिनांक" दबाएं।</div>';return;}
-    el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें:</div>'+
-      dates.map(d=>`<div class="chip" onclick="loadAttSheet('${d.id}','${d.class_date}')">📅 ${fmtDate(d.class_date)}</div>`).join('')+'</div>';
+    el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें (⏱️ अवधि बदलने हेतु मिनट पर टैप करें):</div>'+
+      dates.map(d=>{
+        const isFuture=d.class_date>today();
+        return `<span class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenAttSheet('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</span><span class="chip" style="background:#f0f9ff;" onclick="event.stopPropagation();editDuration('${d.id}',${d.duration_minutes||60},'loadAttDates')">⏱️ ${d.duration_minutes||60}m</span>`;
+      }).join('')+'</div>';
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
+}
+
+function tryOpenAttSheet(cdId,date){
+  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी उपस्थिति दर्ज नहीं की जा सकती।');return;}
+  loadAttSheet(cdId,date);
 }
 
 async function loadAttSheet(cdId,date){
   const el=document.getElementById('attSheetDiv');if(!el)return;
-  const stu=window._stus||[];
-  if(!stu.length){el.innerHTML='<div class="empty"><p>कोई विद्यार्थी नहीं।</p></div>';return;}
+  const stu=(window._stus||[]).filter(s=>!s.joining_date||s.joining_date<=date);
+  if(!stu.length){el.innerHTML='<div class="empty"><p>इस दिनांक तक कोई विद्यार्थी प्रवेशित नहीं।</p></div>';return;}
   el.innerHTML='<div class="spinner"></div>';
   const my=date.substring(0,7);
   try{
     const ids=stu.map(s=>'student_id=eq.'+s.id).join(',');
-    const ex=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status,locked,edited_once');
+    const ex=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status,locked,edited_once,arrival_time,departure_time');
     const sm={};(ex||[]).forEach(r=>sm[r.student_id]=r);
     el.innerHTML=`<div class="card" style="padding:16px;">
       <div class="card-title">📅 ${fmtDate(date)} — उपस्थिति</div>
@@ -1133,7 +1409,9 @@ async function loadAttSheet(cdId,date){
         const aStyle=isAbsent
           ? "background:linear-gradient(160deg,#f87171,#dc2626);color:#fff;box-shadow:0 2px 0 #991b1b;top:2px;border:2px solid #dc2626;"
           : "background:#fff;color:#dc2626;box-shadow:0 4px 0 #f59e0b;top:0;border:2px solid #f59e0b;";
-        return `<div class="att-row">
+        const arr=(rec?.arrival_time||'19:00').substring(0,5);
+        const dep=(rec?.departure_time||'20:00').substring(0,5);
+        return `<div class="att-row" style="flex-wrap:wrap;">
           <div class="att-name">${s.salutation} ${s.name}${locked?'<span class="locked-tag">🔒</span>':''}</div>
           <button id="ap-${cdId}-${s.id}"
             onclick="${locked?`showLockMsg('attMsg-${cdId}')`:`markAtt('${s.id}','present','${date}','${my}','${cdId}')`}"
@@ -1141,10 +1419,29 @@ async function loadAttSheet(cdId,date){
           <button id="aa-${cdId}-${s.id}"
             onclick="${locked?`showLockMsg('attMsg-${cdId}')`:`markAtt('${s.id}','absent','${date}','${my}','${cdId}')`}"
             style="width:38px;height:38px;border-radius:8px;cursor:${locked?'not-allowed':'pointer'};font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;transition:all .15s;${aStyle}">✗</button>
+          <div id="attTimes-${cdId}-${s.id}" style="display:${isPresent?'flex':'none'};align-items:center;gap:6px;width:100%;margin-top:6px;padding-left:2px;">
+            <span style="font-size:11px;color:#64748b;">🕖 आया</span>
+            <input type="time" id="at-${cdId}-${s.id}" value="${arr}" ${locked?'disabled':''}
+              onchange="updateAttTime('${s.id}','${cdId}','${date}','arrival_time',this.value)"
+              style="width:auto;padding:4px 6px;font-size:12px;">
+            <span style="font-size:11px;color:#64748b;">🕗 गया</span>
+            <input type="time" id="dt-${cdId}-${s.id}" value="${dep}" ${locked?'disabled':''}
+              onchange="updateAttTime('${s.id}','${cdId}','${date}','departure_time',this.value)"
+              style="width:auto;padding:4px 6px;font-size:12px;">
+          </div>
         </div>`;
       }).join('')}
     </div>`;
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
+}
+
+async function updateAttTime(sid,cdId,date,field,value){
+  try{
+    await dbPatch('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId,{[field]:value});
+    toast('समय अपडेट हुआ ✓',1200);
+  }catch(e){
+    toast('❌ Error: '+e.message);
+  }
 }
 
 async function markAtt(sid,status,date,my,cdId){
@@ -1175,18 +1472,42 @@ async function markAtt(sid,status,date,my,cdId){
     }
   }
 
+  // Show/hide the arrival-departure time row instantly based on status
+  const timesDiv=document.getElementById('attTimes-'+cdId+'-'+sid);
+  if(timesDiv) timesDiv.style.display = status==='present' ? 'flex' : 'none';
+
   try{
-    const ex=await dbGet('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=id,locked,edited_once');
+    const ex=await dbGet('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=id,locked,edited_once,arrival_time,departure_time');
     const rec=ex?.[0];
     if(rec?.locked&&rec?.edited_once){showLockMsg(msgElId);await loadAttSheet(cdId,date);return;}
     const newEditedOnce=!!rec;
+    const payload={status,locked:true,edited_once:newEditedOnce};
+    if(status==='present'){
+      // Default to 7:00 PM–8:00 PM unless already set (or the teacher's current field values)
+      const atEl=document.getElementById('at-'+cdId+'-'+sid);
+      const dtEl=document.getElementById('dt-'+cdId+'-'+sid);
+      payload.arrival_time = (atEl?.value)||rec?.arrival_time||'19:00';
+      payload.departure_time = (dtEl?.value)||rec?.departure_time||'20:00';
+    }
     if(rec&&rec.id){
-      const updated=await dbPatch('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId,
-        {status,locked:true,edited_once:newEditedOnce});
+      const updated=await dbPatch('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId,payload);
       console.log('PATCH attendance result:',updated);
     } else {
-      const inserted=await dbPost('attendance',{student_id:sid,class_date_id:cdId,date,status,month_year:my,locked:true,edited_once:false});
+      const inserted=await dbPost('attendance',{student_id:sid,class_date_id:cdId,date,month_year:my,...payload});
       console.log('POST attendance result:',inserted);
+      // This is this student's first-ever attendance record — auto-set joining_date
+      // to this class's date, unless it's already been set manually.
+      try{
+        const stu=await dbGet('students?id=eq.'+sid+'&select=joining_date');
+        if(stu?.[0]&&!stu[0].joining_date){
+          await dbPatch('students?id=eq.'+sid,{joining_date:date});
+        }
+      }catch(e){console.error('auto joining_date failed:',e);}
+    }
+    // If marked absent, clear any performance rating that may have been given by mistake
+    if(status==='absent'){
+      try{await dbDelete('performance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId);}
+      catch(e){console.error('clear performance on absent failed:',e);}
     }
     if(msgEl)msgEl.innerHTML='';
     toast('उपस्थिति सहेजी ✓',1200);
@@ -1210,31 +1531,43 @@ async function loadPerfDates(){
 );
     if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info">इस माह कोई दिनांक नहीं। "+ कक्षा दिनांक" दबाएं।</div>';return;}
     el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें:</div>'+
-      dates.map(d=>`<div class="chip" onclick="loadPerfSheet('${d.id}','${d.class_date}')">📅 ${fmtDate(d.class_date)}</div>`).join('')+'</div>';
+      dates.map(d=>{
+        const isFuture=d.class_date>today();
+        return `<div class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenPerfSheet('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</div>`;
+      }).join('')+'</div>';
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
+}
+
+function tryOpenPerfSheet(cdId,date){
+  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी रेटिंग दर्ज नहीं की जा सकती।');return;}
+  loadPerfSheet(cdId,date);
 }
 
 async function loadPerfSheet(cdId,date){
   const el=document.getElementById('perfSheetDiv');if(!el)return;
-  const stu=window._stus||[];
-  if(!stu.length){el.innerHTML='<div class="empty"><p>कोई विद्यार्थी नहीं।</p></div>';return;}
+  const stu=(window._stus||[]).filter(s=>!s.joining_date||s.joining_date<=date);
+  if(!stu.length){el.innerHTML='<div class="empty"><p>इस दिनांक तक कोई विद्यार्थी प्रवेशित नहीं।</p></div>';return;}
   el.innerHTML='<div class="spinner"></div>';
   const my=date.substring(0,7);
   try{
     const ex=await dbGet('performance?class_date_id=eq.'+cdId+'&select=student_id,rating,locked,edited_once');
     const pm={};(ex||[]).forEach(r=>pm[r.student_id]=r);
+    const attRows=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status');
+    const attMap={};(attRows||[]).forEach(r=>attMap[r.student_id]=r.status);
     el.innerHTML=`<div class="card" style="padding:16px;">
       <div class="card-title">📅 ${fmtDate(date)} — प्रदर्शन रेटिंग</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">★1=कमज़ोर ★5=श्रेष्ठ | 🔒=Lock</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">★1=कमज़ोर ★5=श्रेष्ठ | 🔒=Lock | केवल उपस्थित विद्यार्थी को रेट किया जा सकता है</div>
       <div id="perfMsg-${cdId}" class="mb-3"></div>
       ${stu.map(s=>{
         const rec=pm[s.id];
         const locked=rec?.locked&&rec?.edited_once;
+        const isPresent=attMap[s.id]==='present';
+        const disabled=locked||!isPresent;
         return `<div class="att-row">
-          <div class="att-name">${s.salutation} ${s.name}${locked?'<span class="locked-tag">🔒</span>':''}</div>
+          <div class="att-name">${s.salutation} ${s.name}${locked?'<span class="locked-tag">🔒</span>':''}${!isPresent?'<span class="locked-tag" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">अनुपस्थित</span>':''}</div>
           <div class="stars" id="st-${cdId}-${s.id}">
-            ${[1,2,3,4,5].map(i=>`<span style="color:${i<=(rec?.rating||0)?'var(--gold)':'#bae6fd'};font-size:24px;cursor:${locked?'not-allowed':'pointer'};"
-              onclick="${locked?`showLockMsg('perfMsg-${cdId}')`:`setRating('${s.id}','${my}','${cdId}',${i},'${date}')`}">★</span>`).join('')}
+            ${[1,2,3,4,5].map(i=>`<span style="color:${i<=(rec?.rating||0)?'var(--gold)':'#bae6fd'};font-size:24px;cursor:${disabled?'not-allowed':'pointer'};opacity:${isPresent?'1':'.5'};"
+              onclick="${locked?`showLockMsg('perfMsg-${cdId}')`:(!isPresent?`showLockMsg('perfMsg-${cdId}','⚠️ पहले विद्यार्थी को उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है।')`:`setRating('${s.id}','${my}','${cdId}',${i},'${date}')`)}">★</span>`).join('')}
           </div>
         </div>`;
       }).join('')}
@@ -1245,6 +1578,14 @@ async function loadPerfSheet(cdId,date){
 async function setRating(sid,my,cdId,r,date){
   const msgElId='perfMsg-'+cdId;
   const msgEl=document.getElementById(msgElId);
+
+  // Safety check: only present students can be rated
+  const attCheck=await dbGet('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=status').catch(()=>null);
+  if(attCheck?.[0]?.status!=='present'){
+    showLockMsg(msgElId,'⚠️ पहले विद्यार्थी को उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है।');
+    await loadPerfSheet(cdId,date);
+    return;
+  }
 
   // INSTANT visual feedback — fill stars immediately before DB call
   const stars=document.querySelectorAll('#st-'+cdId+'-'+sid+' span');
@@ -1287,17 +1628,28 @@ function mAddStudent(){
       <div class="form-group"><label>नाम *</label><input type="text" id="sn"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>संबंध</label><select id="sr"><option value="">--</option><option value="S/o">S/o</option><option value="D/o">D/o</option></select></div>
-      <div class="form-group"><label>संबंधी का नाम</label><input type="text" id="srn"></div>
+      <div class="form-group"><label>पिता का नाम</label><input type="text" id="sfn"></div>
+      <div class="form-group"><label>📱 पिता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="sfp" maxlength="10"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>माता का नाम</label><input type="text" id="smn"></div>
+      <div class="form-group"><label>📱 माता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="smp" maxlength="10"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>जन्म तिथि</label><input type="date" id="sd"></div>
       <div class="form-group"><label>कक्षा</label><input type="text" id="sc"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>📱 मोबाइल (अभिभावक)</label><input type="tel" id="sph" maxlength="10"></div>
-      <div class="form-group"><label>पता</label><input type="text" id="sa"></div>
+      <div class="form-group"><label>गोत्र</label><input type="text" id="sg"></div>
+      <div class="form-group"><label>Blood Group</label>
+        <select id="sbg"><option value="">--</option>${['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(b=>`<option>${b}</option>`).join('')}</select>
+      </div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email</label><input type="email" id="se"></div>
+      <div class="form-group"><label>प्रवेश तिथि <span style="font-size:11px;color:#94a3b8;">(खाली छोड़ें तो पहली कक्षा से अपने आप सेट होगी)</span></label><input type="date" id="sjd"></div>
+    </div>
+    <div class="form-group"><label>पता</label><input type="text" id="sa"></div>
     <div id="serr"></div>
     <div class="flex gap-3 mt-3">
       <button class="btn btn-gold btn-w" onclick="doAddStudent()">जोड़ें</button>
@@ -1306,10 +1658,17 @@ function mAddStudent(){
 }
 
 async function doAddStudent(){
-  const sal=g('ss'),name=g('sn'),rel=g('sr'),rnm=g('srn'),dob=g('sd'),cls=g('sc'),ph=g('sph'),adr=g('sa');
+  const sal=g('ss'),name=g('sn'),fn=g('sfn'),fp=g('sfp'),mn=g('smn'),mp=g('smp'),
+    dob=g('sd'),cls=g('sc'),gotra=g('sg'),bg=g('sbg'),email=g('se'),jd=g('sjd'),adr=g('sa');
   if(!name){merr('serr','नाम आवश्यक।');return;}
   try{
-    await dbPost('students',{salutation:sal,name,relation_type:rel||null,relation_name:rnm||null,dob:dob||null,class:cls||null,phone:ph||null,address:adr||null});
+    await dbPost('students',{
+      salutation:sal,name,
+      father_name:fn||null,father_phone:fp||null,
+      mother_name:mn||null,mother_phone:mp||null,
+      dob:dob||null,class:cls||null,gotra:gotra||null,blood_group:bg||null,
+      email:email||null,joining_date:jd||null,address:adr||null
+    });
     closeModal();showTeacher();
   }catch(e){merr('serr','Error: '+e.message);}
 }
@@ -1322,17 +1681,28 @@ function mEditStudent(s){
       <div class="form-group"><label>नाम *</label><input type="text" id="esn" value="${s.name||''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>संबंध</label><select id="esr"><option value="">--</option><option value="S/o" ${s.relation_type==='S/o'?'selected':''}>S/o</option><option value="D/o" ${s.relation_type==='D/o'?'selected':''}>D/o</option></select></div>
-      <div class="form-group"><label>संबंधी का नाम</label><input type="text" id="esrn" value="${s.relation_name||''}"></div>
+      <div class="form-group"><label>पिता का नाम</label><input type="text" id="esfn" value="${s.father_name||''}"></div>
+      <div class="form-group"><label>📱 पिता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="esfp" value="${s.father_phone||''}" maxlength="10"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>माता का नाम</label><input type="text" id="esmn" value="${s.mother_name||''}"></div>
+      <div class="form-group"><label>📱 माता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="esmp" value="${s.mother_phone||''}" maxlength="10"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>जन्म तिथि</label><input type="date" id="esd" value="${s.dob||''}"></div>
       <div class="form-group"><label>कक्षा</label><input type="text" id="esc" value="${s.class||''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>📱 मोबाइल</label><input type="tel" id="esph" value="${s.phone||''}" maxlength="10"></div>
-      <div class="form-group"><label>पता</label><input type="text" id="esa" value="${s.address||''}"></div>
+      <div class="form-group"><label>गोत्र</label><input type="text" id="esg" value="${s.gotra||''}"></div>
+      <div class="form-group"><label>Blood Group</label>
+        <select id="esbg"><option value="">--</option>${['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(b=>`<option ${s.blood_group===b?'selected':''}>${b}</option>`).join('')}</select>
+      </div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email</label><input type="email" id="ese" value="${s.email||''}"></div>
+      <div class="form-group"><label>प्रवेश तिथि</label><input type="date" id="esjd" value="${s.joining_date||''}"></div>
+    </div>
+    <div class="form-group"><label>पता</label><input type="text" id="esa" value="${s.address||''}"></div>
     <div id="eserr"></div>
     <div class="flex gap-3 mt-3">
       <button class="btn btn-gold btn-w" onclick="doEditStudent('${s.id}')">सहेजें</button>
@@ -1341,10 +1711,17 @@ function mEditStudent(s){
 }
 
 async function doEditStudent(id){
-  const sal=g('ess'),name=g('esn'),rel=g('esr'),rnm=g('esrn'),dob=g('esd'),cls=g('esc'),ph=g('esph'),adr=g('esa');
+  const sal=g('ess'),name=g('esn'),fn=g('esfn'),fp=g('esfp'),mn=g('esmn'),mp=g('esmp'),
+    dob=g('esd'),cls=g('esc'),gotra=g('esg'),bg=g('esbg'),email=g('ese'),jd=g('esjd'),adr=g('esa');
   if(!name){merr('eserr','नाम आवश्यक।');return;}
   try{
-    await dbPatch('students?id=eq.'+id,{salutation:sal,name,relation_type:rel||null,relation_name:rnm||null,dob:dob||null,class:cls||null,phone:ph||null,address:adr||null});
+    await dbPatch('students?id=eq.'+id,{
+      salutation:sal,name,
+      father_name:fn||null,father_phone:fp||null,
+      mother_name:mn||null,mother_phone:mp||null,
+      dob:dob||null,class:cls||null,gotra:gotra||null,blood_group:bg||null,
+      email:email||null,joining_date:jd||null,address:adr||null
+    });
     closeModal();showTeacher();
   }catch(e){merr('eserr','Error: '+e.message);}
 }
@@ -1405,36 +1782,67 @@ async function searchStu(val){
   if(val.length<2){document.getElementById('searchRes').innerHTML='';return;}
   _st=setTimeout(async()=>{
     try{
-      const data=await dbGet('students?or=(name.ilike.*'+val+'*,phone.ilike.*'+val+'*)&limit=10');
+      const data=await dbGet('students?or=(name.ilike.*'+val+'*,father_phone.ilike.*'+val+'*,mother_phone.ilike.*'+val+'*)&limit=10');
       const el=document.getElementById('searchRes');
       if(!data||!data.length){el.innerHTML='<div class="alert alert-info">कोई विद्यार्थी नहीं मिला।</div>';return;}
       el.innerHTML=data.map(s=>`
-        <div onclick="showParentView('${s.id}')" style="background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:8px;padding:10px 14px;margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <div onclick="gateParentView('${s.id}','${(s.father_phone||'').replace(/'/g,"")}','${(s.mother_phone||'').replace(/'/g,"")}')" style="background:#f0f9ff;border:1.5px solid #7dd3fc;border-radius:8px;padding:10px 14px;margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
           <div><b style="color:var(--sky-deeper)">${s.salutation} ${s.name}</b>
-            <div style="font-size:12px;color:#64748b;">${s.relation_type||''} ${s.relation_name||''} | ${s.phone||'-'}</div>
+            <div style="font-size:12px;color:#64748b;">${s.father_name?('पिता: '+s.father_name+' | '+maskPhone(s.father_phone)):''}${s.mother_name?(' | माता: '+s.mother_name+' | '+maskPhone(s.mother_phone)):''}</div>
           </div>
           <span style="color:var(--sky-dark);">देखें →</span>
         </div>`).join('');
     }catch(e){}
   },350);
 }
+function maskPhone(phone){
+  if(!phone)return '-';
+  const digits=phone.replace(/\D/g,'');
+  if(digits.length<=2)return phone;
+  return digits.slice(0,-2)+'XX';
+}
+
+// ── PARENT PASSWORD GATE (last 4 digits of EITHER registered mobile) ──
+function gateParentView(sid,fatherPhone,motherPhone){
+  const fLast4=(fatherPhone||'').replace(/\D/g,'').slice(-4);
+  const mLast4=(motherPhone||'').replace(/\D/g,'').slice(-4);
+  if(!fLast4&&!mLast4){ showParentView(sid); return; } // no phone on record → open directly, avoid lockout
+  openModal(`
+    <h3>🔒 अभिभावक सत्यापन</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:14px;">पिता या माता के पंजीकृत मोबाइल नंबर के अंतिम 4 अंक दर्ज करें।</p>
+    <div class="form-group"><label>अंतिम 4 अंक</label><input type="password" id="gateInp" maxlength="4" inputmode="numeric" autofocus></div>
+    <div id="gateErr"></div>
+    <div class="flex gap-3 mt-3">
+      <button class="btn btn-gold btn-w" onclick="verifyGate('${sid}','${fLast4}','${mLast4}')">✅ सत्यापित करें</button>
+      <button class="btn btn-ghost" onclick="closeModal()">रद्द</button>
+    </div>`);
+}
+function verifyGate(sid,fLast4,mLast4){
+  const val=g('gateInp');
+  if((fLast4&&val===fLast4)||(mLast4&&val===mLast4)){ closeModal(); showParentView(sid); }
+  else{ merr('gateErr','❌ गलत अंक। पुनः प्रयास करें।'); }
+}
 
 async function showParentView(sid){
   setMain('<div class="spinner"></div>');
   try{
-    const[sArr,att,perf,awards]=await Promise.all([
+    const[sArr,attAll,perfAll,awards]=await Promise.all([
       dbGet('students?id=eq.'+sid+'&limit=1'),
       dbGet('attendance?student_id=eq.'+sid+'&order=date.desc'),
       dbGet('performance?student_id=eq.'+sid+'&select=rating,month_year,class_date_id,class_dates(class_date)&order=month_year.desc'),
       dbGet('monthly_awards?student_id=eq.'+sid)
     ]);
     const s=sArr?.[0];if(!s){showParentSearch();return;}
-    const present=(att||[]).filter(x=>x.status==='present').length;
-    const absent=(att||[]).filter(x=>x.status==='absent').length;
+    // Only show attendance/performance from the student's joining date onward, if set
+    const jd=s.joining_date;
+    const att=jd?(attAll||[]).filter(a=>a.date>=jd):(attAll||[]);
+    const perf=jd?(perfAll||[]).filter(p=>!p.class_dates?.class_date||p.class_dates.class_date>=jd):(perfAll||[]);
+    const present=att.filter(x=>x.status==='present').length;
+    const absent=att.filter(x=>x.status==='absent').length;
     const total=present+absent;
     const pct=total?Math.round(present/total*100):0;
     const byMonth={};
-    (att||[]).forEach(a=>{const m=a.month_year||'';if(!byMonth[m])byMonth[m]={p:0,t:0};if(a.status==='present')byMonth[m].p++;byMonth[m].t++;});
+    att.forEach(a=>{const m=a.month_year||'';if(!byMonth[m])byMonth[m]={p:0,t:0};if(a.status==='present')byMonth[m].p++;byMonth[m].t++;});
     setMain(`
       <button class="back-btn" onclick="showParentSearch()">← वापस</button>
       <div class="card" style="max-width:680px;margin:0 auto;">
@@ -1442,8 +1850,17 @@ async function showParentView(sid){
           <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0c4a6e,#075985);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${s.salutation==='Mr'?'👦':'👧'}</div>
           <div>
             <div class="card-title" style="margin-bottom:3px;">${s.salutation} ${s.name}</div>
-            <p style="font-size:12px;color:#64748b;">${s.relation_type||''} ${s.relation_name||''} | कक्षा: ${s.class||'-'} | 📱 ${s.phone||'-'}</p>
+            <p style="font-size:12px;color:#64748b;">कक्षा: ${s.class||'-'}${s.joining_date?' | प्रवेश: '+fmtDate(s.joining_date):''}</p>
           </div>
+        </div>
+        <div style="font-size:13px;color:#475569;margin-bottom:14px;line-height:1.9;">
+          ${s.father_name?`👨 पिता: <b>${s.father_name}</b>${s.father_phone?' ('+s.father_phone+')':''}<br>`:''}
+          ${s.mother_name?`👩 माता: <b>${s.mother_name}</b>${s.mother_phone?' ('+s.mother_phone+')':''}<br>`:''}
+          ${s.dob?`🎂 जन्म तिथि: ${fmtDate(s.dob)}<br>`:''}
+          ${s.gotra?`🕉️ गोत्र: ${s.gotra}<br>`:''}
+          ${s.blood_group?`🩸 Blood Group: ${s.blood_group}<br>`:''}
+          ${s.email?`✉️ ${s.email}<br>`:''}
+          ${s.address?`🏠 ${s.address}`:''}
         </div>
         <div class="stat-grid">
           <div class="stat-card"><div class="sc-val">${present}<span style="font-size:14px;"> (${pct}%)</span></div><div class="sc-label">उपस्थिति</div></div>
@@ -1461,7 +1878,7 @@ async function showParentView(sid){
           </div>`).join('')||'<p style="color:#64748b;font-size:13px;">कोई रिकॉर्ड नहीं।</p>'}
         <hr style="border:none;border-top:1.5px solid #e0f2fe;margin:16px 0;">
         <div class="card-title">कक्षावार रेटिंग</div>
-        ${(perf||[]).map(p=>`
+        ${perf.map(p=>`
           <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #e0f2fe;">
             <span style="font-size:13px;color:#64748b;">${p.class_dates?.class_date?fmtDate(p.class_dates.class_date):(p.month_year||'-')}</span>
             <div>${[1,2,3,4,5].map(i=>`<span style="color:${i<=p.rating?'var(--gold)':'#bae6fd'};font-size:18px;">★</span>`).join('')}</div>
