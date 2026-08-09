@@ -592,12 +592,16 @@ async function showAdmin(){
         <div class="alert alert-info mb-3">सभी शिक्षकों को ये विद्यार्थी दिखते हैं — साझा कक्षा।</div>
         ${!sc?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>नाम</th><th>पिता</th><th>माता</th><th>कक्षा</th></tr></thead>
-          <tbody>${students.map(s=>`<tr>
+          <thead><tr><th>#</th><th>नाम</th><th>पिता</th><th>माता</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th></tr></thead>
+          <tbody>${students.map((s,i)=>`<tr>
+            <td>${i+1}</td>
             <td><b>${s.salutation} ${s.name}</b></td>
             <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
             <td>${s.mother_name||'-'}${s.mother_phone?' ('+s.mother_phone+')':''}</td>
             <td>${s.class||'-'}</td>
+            <td>${s.gotra||'-'}</td>
+            <td>${s.blood_group||'-'}</td>
+            <td>${s.email||'-'}</td>
           </tr>`).join('')}</tbody>
         </table></div>`}
       </div>
@@ -1229,13 +1233,17 @@ async function showTeacher(){
       <div id="tp-s">
         ${!window._stus.length?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>नाम</th><th>पिता (📱)</th><th>माता (📱)</th><th>जन्म तिथि</th><th>कक्षा</th><th>प्रवेश तिथि</th><th>कार्य</th></tr></thead>
-          <tbody>${window._stus.map(s=>`<tr>
+          <thead><tr><th>#</th><th>नाम</th><th>पिता (📱)</th><th>माता (📱)</th><th>जन्म तिथि</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th><th>प्रवेश तिथि</th><th>कार्य</th></tr></thead>
+          <tbody>${window._stus.map((s,i)=>`<tr>
+            <td>${i+1}</td>
             <td><b>${s.salutation} ${s.name}</b></td>
             <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
             <td>${s.mother_name||'-'}${s.mother_phone?' ('+s.mother_phone+')':''}</td>
             <td>${fmtDate(s.dob)}</td>
             <td>${s.class||'-'}</td>
+            <td>${s.gotra||'-'}</td>
+            <td>${s.blood_group||'-'}</td>
+            <td>${s.email||'-'}</td>
             <td>${s.joining_date?fmtDate(s.joining_date):'-'}</td>
             <td><div class="flex gap-2">
               <button class="btn btn-sky btn-sm" onclick='mEditStudent(${JSON.stringify(s)})'>✏️</button>
