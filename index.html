@@ -1628,11 +1628,11 @@ function mAddStudent(){
       <div class="form-group"><label>नाम *</label><input type="text" id="sn"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>पिता का नाम</label><input type="text" id="sfn"></div>
+      <div class="form-group"><label>पिता का नाम</label><input type="text" id="sfn" value="Shri "></div>
       <div class="form-group"><label>📱 पिता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="sfp" maxlength="10"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>माता का नाम</label><input type="text" id="smn"></div>
+      <div class="form-group"><label>माता का नाम</label><input type="text" id="smn" value="Smt. "></div>
       <div class="form-group"><label>📱 माता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="smp" maxlength="10"></div>
     </div>
     <div class="form-row">
@@ -1681,11 +1681,11 @@ function mEditStudent(s){
       <div class="form-group"><label>नाम *</label><input type="text" id="esn" value="${s.name||''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>पिता का नाम</label><input type="text" id="esfn" value="${s.father_name||''}"></div>
+      <div class="form-group"><label>पिता का नाम</label><input type="text" id="esfn" value="${s.father_name||'Shri '}"></div>
       <div class="form-group"><label>📱 पिता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="esfp" value="${s.father_phone||''}" maxlength="10"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>माता का नाम</label><input type="text" id="esmn" value="${s.mother_name||''}"></div>
+      <div class="form-group"><label>माता का नाम</label><input type="text" id="esmn" value="${s.mother_name||'Smt. '}"></div>
       <div class="form-group"><label>📱 माता मोबाइल <span style="font-size:11px;color:#94a3b8;">(अभिभावक लॉगिन हेतु)</span></label><input type="tel" id="esmp" value="${s.mother_phone||''}" maxlength="10"></div>
     </div>
     <div class="form-row">
