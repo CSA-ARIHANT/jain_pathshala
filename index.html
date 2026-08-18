@@ -439,19 +439,41 @@ async function loadPanchang(){
 
   let nextClassHtml='';
   try{
-    const cfg=await dbGet('admin_config?select=next_class_id&limit=1');
-    const setId=cfg?.[0]?.next_class_id;
-    if(setId){
-      const picked=await dbGet('class_dates?id=eq.'+setId+'&select=class_date');
-      if(picked&&picked.length){
-        nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(picked[0].class_date)}</b>`;
-      }
+    const todayIso=today.toISOString().split('T')[0];
+
+    // 1) Is there an ACTIVE class scheduled for TODAY? → show as "आज की कक्षा"
+    const todaysClass=await dbGet('class_dates?class_date=eq.'+todayIso+'&is_active=eq.true&select=class_date&limit=1');
+    if(todaysClass&&todaysClass.length){
+      nextClassHtml=`<br>📚 आज की कक्षा: <b>${fmtDate(todaysClass[0].class_date)}</b>`;
     }
+
+    // 2) Otherwise, has the teacher/admin explicitly set an upcoming class (next_class_id)?
     if(!nextClassHtml){
-      const todayIso=today.toISOString().split('T')[0];
-      const upcoming=await dbGet('class_dates?class_date=gte.'+todayIso+'&is_active=eq.true&order=class_date&limit=1');
-      if(upcoming&&upcoming.length){
-        nextClassHtml=`<br>📚 अगली या आज की कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
+      const cfg=await dbGet('admin_config?select=next_class_id,default_class_weekday&limit=1');
+      const setId=cfg?.[0]?.next_class_id;
+      if(setId){
+        const picked=await dbGet('class_dates?id=eq.'+setId+'&class_date=gt.'+todayIso+'&select=class_date');
+        if(picked&&picked.length){
+          nextClassHtml=`<br>📚 अगली कक्षा: <b>${fmtDate(picked[0].class_date)}</b>`;
+        }
+      }
+      // 3) Otherwise, any future active class already in the DB?
+      if(!nextClassHtml){
+        const upcoming=await dbGet('class_dates?class_date=gt.'+todayIso+'&is_active=eq.true&order=class_date&limit=1');
+        if(upcoming&&upcoming.length){
+          nextClassHtml=`<br>📚 अगली कक्षा: <b>${fmtDate(upcoming[0].class_date)}</b>`;
+        }
+      }
+      // 4) Otherwise, compute the next occurrence of the configured default weekday
+      //    (defaults to Saturday=6, but is editable by Admin — never hardcoded assumption)
+      if(!nextClassHtml){
+        const defWeekday=(cfg?.[0]?.default_class_weekday??6);
+        const d=new Date(today);
+        let add=(defWeekday-d.getDay()+7)%7;
+        if(add===0)add=7; // today already handled above, so always roll to next occurrence
+        d.setDate(d.getDate()+add);
+        const yyyy2=d.getFullYear(),mm2=String(d.getMonth()+1).padStart(2,'0'),dd2=String(d.getDate()).padStart(2,'0');
+        nextClassHtml=`<br>📚 अगली कक्षा (अनुमानित): <b>${fmtDate(yyyy2+'-'+mm2+'-'+dd2)}</b>`;
       }
     }
   }catch(e){}
@@ -576,8 +598,9 @@ async function showAdmin(){
         </div>
         ${!tc?'<div class="empty"><div>📚</div><p>कोई शिक्षक नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>नाम</th><th>संबंध</th><th>📱 मोबाइल</th><th>🎂 जन्म तिथि</th><th>कार्य</th></tr></thead>
-          <tbody>${teachers.map(t=>`<tr>
+          <thead><tr><th>#</th><th>नाम</th><th>संबंध</th><th>📱 मोबाइल</th><th>🎂 जन्म तिथि</th><th>कार्य</th></tr></thead>
+          <tbody>${teachers.map((t,i)=>`<tr>
+            <td>${i+1}</td>
             <td><b>${t.salutation} ${t.name}</b></td>
             <td>${t.relation_type||''} ${t.relation_name||''}</td>
             <td>${t.phone||'-'}</td>
@@ -654,6 +677,24 @@ async function showAdmin(){
   <div class="card-title">📅 Class Date Management</div>
   <div id="cdManageDiv"></div>
 </div>
+        <div class="card mt-3">
+          <div class="card-title">🗓️ डिफ़ॉल्ट साप्ताहिक कक्षा दिन</div>
+          <p style="font-size:13px;color:#64748b;margin-bottom:14px;">जब तक कोई नई कक्षा दिनांक नहीं जोड़ी जाती, होम पेज पर "अगली कक्षा (अनुमानित)" इसी दिन के अनुसार दिखेगी।</p>
+          <div class="form-group" style="max-width:240px;">
+            <label>डिफ़ॉल्ट दिन</label>
+            <select id="defWeekdaySel">
+              <option value="0">रविवार</option>
+              <option value="1">सोमवार</option>
+              <option value="2">मंगलवार</option>
+              <option value="3">बुधवार</option>
+              <option value="4">गुरुवार</option>
+              <option value="5">शुक्रवार</option>
+              <option value="6">शनिवार</option>
+            </select>
+          </div>
+          <button class="btn btn-gold btn-sm" onclick="saveDefWeekday()">✅ सहेजें</button>
+          <div id="defWeekdayMsg" class="mt-3"></div>
+        </div>
       </div>
 
       <div id="ap-pin" class="hidden">
@@ -681,7 +722,24 @@ if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
   loadClassDateManager();
+  loadDefWeekday();
   }
+}
+async function loadDefWeekday(){
+  const sel=document.getElementById('defWeekdaySel');
+  if(!sel)return;
+  try{
+    const cfg=await dbGet('admin_config?select=default_class_weekday&limit=1');
+    sel.value=String(cfg?.[0]?.default_class_weekday??6);
+  }catch(e){}
+}
+async function saveDefWeekday(){
+  const val=parseInt(g('defWeekdaySel'));
+  try{
+    await dbPatch('admin_config?id=eq.1',{default_class_weekday:val});
+    document.getElementById('defWeekdayMsg').innerHTML='<div class="alert alert-ok">✅ सहेज लिया!</div>';
+    toast('✅ डिफ़ॉल्ट दिन सहेजा गया');
+  }catch(e){document.getElementById('defWeekdayMsg').innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
 }
 async function toggleClassDate(id,current){
 
@@ -1227,8 +1285,7 @@ async function showTeacher(){
       <div class="alert alert-info mb-3" style="padding:8px 12px;font-size:12px;">ℹ️ सभी शिक्षकों को ये विद्यार्थी दिखते हैं।</div>
       <div class="tabs">
         <div class="tab active" id="tt-s" onclick="ttab('s')">विद्यार्थी</div>
-        <div class="tab" id="tt-a" onclick="ttab('a')">उपस्थिति</div>
-        <div class="tab" id="tt-p" onclick="ttab('p')">रेटिंग</div>
+        <div class="tab" id="tt-ap" onclick="ttab('ap')">उपस्थिति व रेटिंग</div>
         <div class="tab" id="tt-r" onclick="ttab('r')">🏆 रैंकिंग</div>
       </div>
 
@@ -1255,28 +1312,19 @@ async function showTeacher(){
         </table></div>`}
       </div>
 
-      <div id="tp-a" class="hidden">
+      <div id="tp-ap" class="hidden">
         <div class="month-bar">
-          <select id="aMon" onchange="loadAttDates()">${monthOpts()}</select>
-          <button class="btn btn-gold btn-sm" onclick="mAddClassDate('a')">+ कक्षा दिनांक</button>
+          <select id="apMon" onchange="loadMergedDates()">${monthOpts()}</select>
+          <button class="btn btn-gold btn-sm" onclick="mAddClassDate('ap')">+ कक्षा दिनांक</button>
         </div>
-        <div id="attDatesDiv"></div>
-        <div id="attSheetDiv"></div>
-      </div>
-
-      <div id="tp-p" class="hidden">
-        <div class="month-bar">
-          <select id="pMon" onchange="loadPerfDates()">${monthOpts()}</select>
-          <button class="btn btn-gold btn-sm" onclick="mAddClassDate('p')">+ कक्षा दिनांक</button>
-        </div>
-        <div id="perfDatesDiv"></div>
-        <div id="perfSheetDiv"></div>
+        <div id="mergedDatesDiv"></div>
+        <div id="mergedSheetDiv"></div>
       </div>
 
       <div id="tp-r" class="hidden">
         <div id="teacherRankDiv"><div class="spinner"></div></div>
       </div>`);
-    loadAttDates();loadPerfDates();
+    loadMergedDates();
     loadBirthdays('birthdayDivTeacher');
   }catch(e){setMain('<div class="alert alert-err">Error: '+e.message+'</div>');}
 }
@@ -1321,17 +1369,11 @@ async function loadTeacherRankings(){
 }
 
 function ttab(t){
-  ['s','a','p','r'].forEach(x=>{
+  ['s','ap','r'].forEach(x=>{
     document.getElementById('tt-'+x)?.classList.toggle('active',x===t);
     document.getElementById('tp-'+x)?.classList.toggle('hidden',x!==t);
   });
-  if(t==='a')loadAttDates();
-  if(t==='p'){
-    const am=document.getElementById('aMon')?.value;
-    const pm=document.getElementById('pMon');
-    if(am&&pm&&pm.value!==am)pm.value=am;
-    loadPerfDates();
-  }
+  if(t==='ap')loadMergedDates();
   if(t==='r')loadTeacherRankings();
 }
 
@@ -1362,8 +1404,7 @@ async function doAddClassDate(tab){
       catch(e){console.error('set next_class_id failed:',e);}
     }
     closeModal();
-    if(tab==='a'){document.getElementById('aMon').value=my;loadAttDates();}
-    else{document.getElementById('pMon').value=my;loadPerfDates();}
+    document.getElementById('apMon').value=my;loadMergedDates();
     toast('📅 '+fmtDate(date)+' जोड़ी गई ✓');
   }catch(e){
     if(e.message.includes('unique')||e.message.includes('duplicate')){merr('cderr','यह दिनांक पहले से जोड़ी जा चुकी है।');}
@@ -1371,10 +1412,10 @@ async function doAddClassDate(tab){
   }
 }
 
-async function loadAttDates(){
-  const el=document.getElementById('attDatesDiv'),el2=document.getElementById('attSheetDiv');
+async function loadMergedDates(){
+  const el=document.getElementById('mergedDatesDiv'),el2=document.getElementById('mergedSheetDiv');
   if(!el)return;if(el2)el2.innerHTML='';
-  const my=document.getElementById('aMon')?.value;
+  const my=document.getElementById('apMon')?.value;
   try{
     const dates=await dbGet(
   'class_dates?month_year=eq.'+my+
@@ -1384,58 +1425,70 @@ async function loadAttDates(){
     el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें (⏱️ अवधि बदलने हेतु मिनट पर टैप करें):</div>'+
       dates.map(d=>{
         const isFuture=d.class_date>today();
-        return `<span class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenAttSheet('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</span><span class="chip" style="background:#f0f9ff;" onclick="event.stopPropagation();editDuration('${d.id}',${d.duration_minutes||60},'loadAttDates')">⏱️ ${d.duration_minutes||60}m</span>`;
+        return `<span class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenMergedSheet('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</span><span class="chip" style="background:#f0f9ff;" onclick="event.stopPropagation();editDuration('${d.id}',${d.duration_minutes||60},'loadMergedDates')">⏱️ ${d.duration_minutes||60}m</span>`;
       }).join('')+'</div>';
   }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
 }
 
-function tryOpenAttSheet(cdId,date){
-  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी उपस्थिति दर्ज नहीं की जा सकती।');return;}
-  loadAttSheet(cdId,date);
+function tryOpenMergedSheet(cdId,date){
+  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी दर्ज नहीं की जा सकती।');return;}
+  loadMergedSheet(cdId,date);
 }
 
-async function loadAttSheet(cdId,date){
-  const el=document.getElementById('attSheetDiv');if(!el)return;
+async function loadMergedSheet(cdId,date){
+  const el=document.getElementById('mergedSheetDiv');if(!el)return;
   const stu=(window._stus||[]).filter(s=>!s.joining_date||s.joining_date<=date);
   if(!stu.length){el.innerHTML='<div class="empty"><p>इस दिनांक तक कोई विद्यार्थी प्रवेशित नहीं।</p></div>';return;}
   el.innerHTML='<div class="spinner"></div>';
   const my=date.substring(0,7);
   try{
-    const ids=stu.map(s=>'student_id=eq.'+s.id).join(',');
-    const ex=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status,locked,edited_once,arrival_time,departure_time');
-    const sm={};(ex||[]).forEach(r=>sm[r.student_id]=r);
+    const exAtt=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status,locked,edited_once,arrival_time,departure_time');
+    const am={};(exAtt||[]).forEach(r=>am[r.student_id]=r);
+    const exPerf=await dbGet('performance?class_date_id=eq.'+cdId+'&select=student_id,rating,locked,edited_once');
+    const pm={};(exPerf||[]).forEach(r=>pm[r.student_id]=r);
     el.innerHTML=`<div class="card" style="padding:16px;">
-      <div class="card-title">📅 ${fmtDate(date)} — उपस्थिति</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">🔒 = Lock हो चुका (Admin ही बदल सकता है)</div>
-      <div id="attMsg-${cdId}" class="mb-3"></div>
-      ${stu.map(s=>{
-        const rec=sm[s.id];
-        const locked=rec?.locked&&rec?.edited_once;
-        const isPresent=rec?.status==='present';
-        const isAbsent=rec?.status==='absent';
+      <div class="card-title">📅 ${fmtDate(date)} — उपस्थिति व रेटिंग</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">🔒 पहला = उपस्थिति Lock | 🔒 दूसरा = रेटिंग Lock (बटन के बाद, स्टार्स से पहले) | ★1=कमज़ोर ★5=श्रेष्ठ | पहले उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है</div>
+      <div id="mMsg-${cdId}" class="mb-3"></div>
+      ${stu.map((s,i)=>{
+        const arec=am[s.id];
+        const alocked=arec?.locked&&arec?.edited_once;
+        const isPresent=arec?.status==='present';
+        const isAbsent=arec?.status==='absent';
         const pStyle=isPresent
           ? "background:linear-gradient(160deg,#4ade80,#16a34a);color:#fff;box-shadow:0 2px 0 #15803d;top:2px;border:2px solid #16a34a;"
           : "background:#fff;color:#16a34a;box-shadow:0 4px 0 #f59e0b;top:0;border:2px solid #f59e0b;";
         const aStyle=isAbsent
           ? "background:linear-gradient(160deg,#f87171,#dc2626);color:#fff;box-shadow:0 2px 0 #991b1b;top:2px;border:2px solid #dc2626;"
           : "background:#fff;color:#dc2626;box-shadow:0 4px 0 #f59e0b;top:0;border:2px solid #f59e0b;";
-        const arr=(rec?.arrival_time||'19:00').substring(0,5);
-        const dep=(rec?.departure_time||'20:00').substring(0,5);
-        return `<div class="att-row" style="flex-wrap:wrap;">
-          <div class="att-name">${s.salutation} ${s.name}${locked?'<span class="locked-tag">🔒</span>':''}</div>
+        const arr=(arec?.arrival_time||'19:00').substring(0,5);
+        const dep=(arec?.departure_time||'20:00').substring(0,5);
+        const prec=pm[s.id];
+        const plocked=prec?.locked&&prec?.edited_once;
+        const pdisabled=plocked||!isPresent;
+        return `<div class="att-row" style="flex-wrap:wrap;align-items:flex-start;">
+          <div class="att-name" style="width:100%;">${i+1}. ${s.salutation} ${s.name}</div>
           <button id="ap-${cdId}-${s.id}"
-            onclick="${locked?`showLockMsg('attMsg-${cdId}')`:`markAtt('${s.id}','present','${date}','${my}','${cdId}')`}"
-            style="width:38px;height:38px;border-radius:8px;cursor:${locked?'not-allowed':'pointer'};font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;transition:all .15s;${pStyle}">✓</button>
+            onclick="${alocked?`showLockMsg('mMsg-${cdId}')`:`markAtt('${s.id}','present','${date}','${my}','${cdId}')`}"
+            style="width:38px;height:38px;border-radius:8px;cursor:${alocked?'not-allowed':'pointer'};font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;transition:all .15s;${pStyle}">✓</button>
           <button id="aa-${cdId}-${s.id}"
-            onclick="${locked?`showLockMsg('attMsg-${cdId}')`:`markAtt('${s.id}','absent','${date}','${my}','${cdId}')`}"
-            style="width:38px;height:38px;border-radius:8px;cursor:${locked?'not-allowed':'pointer'};font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;transition:all .15s;${aStyle}">✗</button>
+            onclick="${alocked?`showLockMsg('mMsg-${cdId}')`:`markAtt('${s.id}','absent','${date}','${my}','${cdId}')`}"
+            style="width:38px;height:38px;border-radius:8px;cursor:${alocked?'not-allowed':'pointer'};font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;transition:all .15s;${aStyle}">✗</button>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:6px;height:38px;">
+            ${alocked?'<span class="locked-tag" title="उपस्थिति Lock">🔒</span>':''}
+            ${plocked?'<span class="locked-tag" title="रेटिंग Lock">🔒</span>':''}
+          </div>
+          <div class="stars" id="st-${cdId}-${s.id}" style="margin-left:6px;display:flex;align-items:center;height:38px;">
+            ${[1,2,3,4,5].map(i=>`<span style="color:${i<=(prec?.rating||0)?'var(--gold)':'#bae6fd'};font-size:22px;cursor:${pdisabled?'not-allowed':'pointer'};opacity:${isPresent?'1':'.5'};"
+              onclick="${plocked?`showLockMsg('mMsg-${cdId}')`:(!isPresent?`showLockMsg('mMsg-${cdId}','⚠️ पहले विद्यार्थी को उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है।')`:`setRating('${s.id}','${my}','${cdId}',${i},'${date}')`)}">★</span>`).join('')}
+          </div>
           <div id="attTimes-${cdId}-${s.id}" style="display:${isPresent?'flex':'none'};align-items:center;gap:6px;width:100%;margin-top:6px;padding-left:2px;">
             <span style="font-size:11px;color:#64748b;">🕖 आया</span>
-            <input type="time" id="at-${cdId}-${s.id}" value="${arr}" ${locked?'disabled':''}
+            <input type="time" id="at-${cdId}-${s.id}" value="${arr}" ${alocked?'disabled':''}
               onchange="updateAttTime('${s.id}','${cdId}','${date}','arrival_time',this.value)"
               style="width:auto;padding:4px 6px;font-size:12px;">
             <span style="font-size:11px;color:#64748b;">🕗 गया</span>
-            <input type="time" id="dt-${cdId}-${s.id}" value="${dep}" ${locked?'disabled':''}
+            <input type="time" id="dt-${cdId}-${s.id}" value="${dep}" ${alocked?'disabled':''}
               onchange="updateAttTime('${s.id}','${cdId}','${date}','departure_time',this.value)"
               style="width:auto;padding:4px 6px;font-size:12px;">
           </div>
@@ -1455,7 +1508,7 @@ async function updateAttTime(sid,cdId,date,field,value){
 }
 
 async function markAtt(sid,status,date,my,cdId){
-  const msgElId='attMsg-'+cdId;
+  const msgElId='mMsg-'+cdId;
   const msgEl=document.getElementById(msgElId);
 
   // INSTANT visual feedback — change button colors immediately before DB call
@@ -1489,7 +1542,7 @@ async function markAtt(sid,status,date,my,cdId){
   try{
     const ex=await dbGet('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=id,locked,edited_once,arrival_time,departure_time');
     const rec=ex?.[0];
-    if(rec?.locked&&rec?.edited_once){showLockMsg(msgElId);await loadAttSheet(cdId,date);return;}
+    if(rec?.locked&&rec?.edited_once){showLockMsg(msgElId);await loadMergedSheet(cdId,date);return;}
     const newEditedOnce=!!rec;
     const payload={status,locked:true,edited_once:newEditedOnce};
     if(status==='present'){
@@ -1522,78 +1575,23 @@ async function markAtt(sid,status,date,my,cdId){
     if(msgEl)msgEl.innerHTML='';
     toast('उपस्थिति सहेजी ✓',1200);
     // Refresh in background to sync lock state — colors already updated instantly above
-    setTimeout(()=>loadAttSheet(cdId,date),400);
+    setTimeout(()=>loadMergedSheet(cdId,date),400);
   }catch(e){
     console.error('markAtt error:',e);
     showLockMsg(msgElId,'❌ Error: '+e.message);
-    await loadAttSheet(cdId,date); // revert to actual DB state on error
+    await loadMergedSheet(cdId,date); // revert to actual DB state on error
   }
 }
 
-async function loadPerfDates(){
-  const el=document.getElementById('perfDatesDiv'),el2=document.getElementById('perfSheetDiv');
-  if(!el)return;if(el2)el2.innerHTML='';
-  const my=document.getElementById('pMon')?.value;
-  try{
-    const dates=await dbGet(
-  'class_dates?month_year=eq.'+my+
-  '&is_active=eq.true&order=class_date'
-);
-    if(!dates||!dates.length){el.innerHTML='<div class="alert alert-info">इस माह कोई दिनांक नहीं। "+ कक्षा दिनांक" दबाएं।</div>';return;}
-    el.innerHTML='<div style="margin-bottom:14px;"><div style="font-size:13px;color:#64748b;margin-bottom:8px;">📅 दिनांक चुनें:</div>'+
-      dates.map(d=>{
-        const isFuture=d.class_date>today();
-        return `<div class="chip"${isFuture?' style="opacity:.6;"':''} onclick="tryOpenPerfSheet('${d.id}','${d.class_date}')">${isFuture?'🔜':'📅'} ${fmtDate(d.class_date)}</div>`;
-      }).join('')+'</div>';
-  }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
-}
-
-function tryOpenPerfSheet(cdId,date){
-  if(date>today()){toast('⚠️ भविष्य की तारीख — अभी रेटिंग दर्ज नहीं की जा सकती।');return;}
-  loadPerfSheet(cdId,date);
-}
-
-async function loadPerfSheet(cdId,date){
-  const el=document.getElementById('perfSheetDiv');if(!el)return;
-  const stu=(window._stus||[]).filter(s=>!s.joining_date||s.joining_date<=date);
-  if(!stu.length){el.innerHTML='<div class="empty"><p>इस दिनांक तक कोई विद्यार्थी प्रवेशित नहीं।</p></div>';return;}
-  el.innerHTML='<div class="spinner"></div>';
-  const my=date.substring(0,7);
-  try{
-    const ex=await dbGet('performance?class_date_id=eq.'+cdId+'&select=student_id,rating,locked,edited_once');
-    const pm={};(ex||[]).forEach(r=>pm[r.student_id]=r);
-    const attRows=await dbGet('attendance?class_date_id=eq.'+cdId+'&select=student_id,status');
-    const attMap={};(attRows||[]).forEach(r=>attMap[r.student_id]=r.status);
-    el.innerHTML=`<div class="card" style="padding:16px;">
-      <div class="card-title">📅 ${fmtDate(date)} — प्रदर्शन रेटिंग</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">★1=कमज़ोर ★5=श्रेष्ठ | 🔒=Lock | केवल उपस्थित विद्यार्थी को रेट किया जा सकता है</div>
-      <div id="perfMsg-${cdId}" class="mb-3"></div>
-      ${stu.map(s=>{
-        const rec=pm[s.id];
-        const locked=rec?.locked&&rec?.edited_once;
-        const isPresent=attMap[s.id]==='present';
-        const disabled=locked||!isPresent;
-        return `<div class="att-row">
-          <div class="att-name">${s.salutation} ${s.name}${locked?'<span class="locked-tag">🔒</span>':''}${!isPresent?'<span class="locked-tag" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;">अनुपस्थित</span>':''}</div>
-          <div class="stars" id="st-${cdId}-${s.id}">
-            ${[1,2,3,4,5].map(i=>`<span style="color:${i<=(rec?.rating||0)?'var(--gold)':'#bae6fd'};font-size:24px;cursor:${disabled?'not-allowed':'pointer'};opacity:${isPresent?'1':'.5'};"
-              onclick="${locked?`showLockMsg('perfMsg-${cdId}')`:(!isPresent?`showLockMsg('perfMsg-${cdId}','⚠️ पहले विद्यार्थी को उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है।')`:`setRating('${s.id}','${my}','${cdId}',${i},'${date}')`)}">★</span>`).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }catch(e){el.innerHTML='<div class="alert alert-err">Error: '+e.message+'</div>';}
-}
-
 async function setRating(sid,my,cdId,r,date){
-  const msgElId='perfMsg-'+cdId;
+  const msgElId='mMsg-'+cdId;
   const msgEl=document.getElementById(msgElId);
 
   // Safety check: only present students can be rated
   const attCheck=await dbGet('attendance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=status').catch(()=>null);
   if(attCheck?.[0]?.status!=='present'){
     showLockMsg(msgElId,'⚠️ पहले विद्यार्थी को उपस्थित दर्ज करें, तभी रेटिंग दी जा सकती है।');
-    await loadPerfSheet(cdId,date);
+    await loadMergedSheet(cdId,date);
     return;
   }
 
@@ -1604,7 +1602,7 @@ async function setRating(sid,my,cdId,r,date){
   try{
     const ex=await dbGet('performance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId+'&select=id,locked,edited_once');
     const rec=ex?.[0];
-    if(rec?.locked&&rec?.edited_once){showLockMsg(msgElId);await loadPerfSheet(cdId,date);return;}
+    if(rec?.locked&&rec?.edited_once){showLockMsg(msgElId);await loadMergedSheet(cdId,date);return;}
     const newEditedOnce=!!rec;
     if(rec&&rec.id){
       const updated=await dbPatch('performance?student_id=eq.'+sid+'&class_date_id=eq.'+cdId,
@@ -1616,11 +1614,11 @@ async function setRating(sid,my,cdId,r,date){
     }
     if(msgEl)msgEl.innerHTML='';
     toast('रेटिंग सहेजी ✓',1200);
-    setTimeout(()=>loadPerfSheet(cdId,date),400);
+    setTimeout(()=>loadMergedSheet(cdId,date),400);
   }catch(e){
     console.error('setRating error:',e);
     showLockMsg(msgElId,'❌ Error: '+e.message);
-    await loadPerfSheet(cdId,date);
+    await loadMergedSheet(cdId,date);
   }
 }
 
@@ -1808,8 +1806,8 @@ async function searchStu(val){
 function maskPhone(phone){
   if(!phone)return '-';
   const digits=phone.replace(/\D/g,'');
-  if(digits.length<=2)return phone;
-  return digits.slice(0,-2)+'XX';
+  if(digits.length<=4)return 'XXXX';
+  return digits.slice(0,-4)+'XXXX';
 }
 
 // ── PARENT PASSWORD GATE (last 4 digits of EITHER registered mobile) ──
