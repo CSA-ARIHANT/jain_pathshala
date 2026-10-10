@@ -145,17 +145,17 @@ select option{background:#fff;}
 @media(max-width:600px){.app-main{padding:14px 10px;}.form-row{grid-template-columns:1fr;}.lcard{padding:18px 12px;}}
 
 /* ═══ APPLE GLASS THEME (cream glass + golden border) ═══ */
-:root{--glass:linear-gradient(145deg,rgba(255,253,245,.88),rgba(255,247,225,.66));--gb:#d4a017;--ink:#3b2a0a;--ink2:#6b5320;}
+:root{--glass:linear-gradient(145deg,rgba(255,253,245,.88),rgba(255,247,225,.66));--gb:#d4a017;--ink:#1f1a0e;--ink2:#4b4636;}
 body{color:var(--ink);background:
   radial-gradient(circle at 10% 8%,rgba(252,211,77,.40) 0,transparent 38%),
   radial-gradient(circle at 92% 14%,rgba(56,189,248,.38) 0,transparent 42%),
   radial-gradient(circle at 55% 100%,rgba(251,207,232,.45) 0,transparent 48%),
   linear-gradient(160deg,#e0f2fe,#fff8e7 55%,#bae6fd);background-attachment:fixed;}
-.app-header,.app-footer{background:linear-gradient(145deg,rgba(255,253,245,.82),rgba(255,244,214,.68))!important;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:#7c4a03!important;}
+.app-header,.app-footer{background:linear-gradient(145deg,rgba(255,253,245,.82),rgba(255,244,214,.68))!important;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:#0c3558!important;}
 .app-header{border-bottom:2px solid var(--gb)!important;box-shadow:0 8px 28px rgba(160,110,10,.18);}
 .app-footer{border-top:2px solid var(--gb)!important;}
-.title-group h1{color:#7c4a03!important;}
-.title-group p,#liveClock,#liveOnlineDiv{color:#8a5a0b!important;}
+.title-group h1{color:#0c3558!important;}
+.title-group p,#liveClock,#liveOnlineDiv{color:#3d3520!important;}
 .logo{border-color:#fff;box-shadow:0 0 0 2px var(--gb),0 4px 10px rgba(160,110,10,.3);}
 .card,.modal,.lcard,.award-card,.stat-card,.confirm-box{
   background:var(--glass)!important;border:1.5px solid var(--gb)!important;
@@ -164,29 +164,38 @@ body{color:var(--ink);background:
 .lcard{transition:transform .2s;}
 .lcard:hover{transform:translateY(-4px);}
 .lcard:active{transform:translateY(0);}
-.lcard h3,.card-title,.modal h3,.section-title{color:#7c4a03!important;}
+.lcard h3,.card-title,.modal h3,.section-title{color:#0c3558!important;}
 .lcard p{color:var(--ink2)!important;}
-.sc-val{color:#92400e!important;}
+.sc-val{color:#0c3558!important;}
 .sc-label{color:var(--ink2)!important;}
-.award-card h4{color:#92400e!important;}
-.award-card p{color:#78350f!important;}
-.confirm-box p{color:#7c4a03;}
+.award-card h4{color:#0c3558!important;}
+.award-card p{color:#1f1a0e!important;}
+.confirm-box p{color:#0c3558;}
 .modal-bg{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(60,40,10,.45);}
-.tab,.chip,.pin-key{background:linear-gradient(145deg,rgba(255,253,245,.9),rgba(255,244,214,.7))!important;border:1.5px solid var(--gb)!important;color:#7c4a03!important;backdrop-filter:blur(10px);box-shadow:0 4px 0 #e6c15a,0 6px 10px rgba(160,110,10,.12)!important;}
+.tab,.chip,.pin-key{background:linear-gradient(145deg,rgba(255,253,245,.9),rgba(255,244,214,.7))!important;border:1.5px solid var(--gb)!important;color:#0c3558!important;backdrop-filter:blur(10px);box-shadow:0 4px 0 #e6c15a,0 6px 10px rgba(160,110,10,.12)!important;}
 .tab.active{background:linear-gradient(160deg,#fcd34d,#f59e0b)!important;color:#3b2a0a!important;box-shadow:0 2px 0 #b45309!important;}
 .chip[style*="background"]{background:rgba(255,251,235,.85)!important;}
 input,select{background:rgba(255,255,255,.75)!important;border:1.5px solid #e0b640!important;color:var(--ink)!important;}
 input:focus,select:focus{border-color:var(--gb)!important;box-shadow:0 0 0 3px rgba(212,160,23,.25)!important;}
-.form-group label{color:#6b5320;}
+.form-group label{color:#4b4636;}
 table{border-color:rgba(212,160,23,.35);background:rgba(255,255,255,.35);}
-th{background:rgba(254,243,199,.8)!important;color:#7c4a03!important;border-bottom:2px solid var(--gb)!important;border-right-color:rgba(212,160,23,.3)!important;}
+th{background:rgba(254,243,199,.8)!important;color:#0c3558!important;border-bottom:2px solid var(--gb)!important;border-right-color:rgba(212,160,23,.3)!important;}
 td{color:var(--ink)!important;border-color:rgba(212,160,23,.25)!important;}
 tr:hover td{background:rgba(252,211,77,.28)!important;}
 .alert{backdrop-filter:blur(8px);}
 .empty,.empty p{color:var(--ink2);}
 p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b"]{color:var(--ink2)!important;}
 [style*="background:#f0f9ff"]{background:rgba(255,251,235,.85)!important;border-color:var(--gb)!important;}
-.back-btn{color:#7c4a03;}
+.back-btn{color:#0c3558;}
+
+.title-group h1{color:#0c3558!important;}
+#dailyQuoteDiv p,[style*="color:#92400e"]{color:#1f1a0e!important;}
+.app-footer a{color:#0c3558;font-weight:700;text-decoration:underline;text-underline-offset:3px;}
+.app-footer a:hover{color:#075985;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.hdr-stats{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;line-height:1.3;color:#1f1a0e;white-space:nowrap;}
+.hdr-stats b{color:#0c3558;}
+@media(max-width:480px){.hdr-stats{font-size:10px;}}
 </style>
 </head>
 <body>
@@ -194,13 +203,16 @@ p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b
   <div class="logo">ॐ</div>
   <div class="title-group"><h1>जैन पाठशाला</h1><p>श्री अरिहंत विकास समिति</p></div>
   <div id="liveClock" class="hidden" style="margin-left:16px;font-size:12px;color:#bae6fd;white-space:nowrap;"></div>
-  <div id="liveOnlineDiv" style="margin-left:12px;font-size:12px;color:#bae6fd;white-space:nowrap;">🟢 अभी ऑनलाइन: <b id="liveOnlineCount">-</b></div>
   <div class="header-right">
+    <div class="hdr-stats">
+      <div>🟢 अभी ऑनलाइन: <b id="liveOnlineCount">-</b></div>
+      <div>👁️ कुल विज़िटर: <b id="liveTotalCount">-</b></div>
+    </div>
     <button class="btn-logout hidden" id="logoutBtn" onclick="logout()">लॉगआउट</button>
   </div>
 </header>
 <main class="app-main" id="appMain"><div class="spinner"></div></main>
-<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏</footer>
+<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener"> जैन पंचांग</a></div></footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
 <script src="config.js"></script>
@@ -235,7 +247,7 @@ const dbUpsert=(p,b)=>db(p,'POST',b,{'Prefer':'resolution=merge-duplicates,retur
 window.addEventListener('load',()=>{
   const s=sessionStorage.getItem('jpMe');
   if(s)try{ME=JSON.parse(s);}catch(e){}
-  ME?routeMe():showLanding();
+  ME?(routeMe(),readVisitorCount()):showLanding();
   startClock();
   liveTick();
   setInterval(liveTick,20000);
@@ -340,6 +352,13 @@ async function showLanding(){
 }
 
 // ── 1. VISITOR COUNTER ────────────────────────
+async function readVisitorCount(){
+  try{
+    const rows=await dbGet('visitor_count?id=eq.1&select=count');
+    const tc=document.getElementById('liveTotalCount');
+    if(tc&&rows&&rows.length)tc.textContent=rows[0].count||0;
+  }catch(e){}
+}
 async function bumpVisitorCount(){
   const el=document.getElementById('visitorDiv');
   try{
@@ -353,7 +372,7 @@ async function bumpVisitorCount(){
       newCount=1;
       await dbPost('visitor_count',{id:1,count:1});
     }
-    if(el)el.innerHTML='<p style="font-size:12px;color:#64748b;margin-top:10px;">👁️ कुल विज़िटर: <b style="color:var(--sky-deeper);">'+newCount+'</b></p>';
+    const tc=document.getElementById('liveTotalCount');if(tc)tc.textContent=newCount;
   }catch(e){
     if(el)el.innerHTML='';
     console.warn('Visitor counter table missing — run updated SQL to enable.');
