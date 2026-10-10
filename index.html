@@ -143,6 +143,50 @@ select option{background:#fff;}
 .confirm-box .ci{font-size:36px;margin-bottom:8px;}
 .confirm-box p{color:#92400e;font-size:14px;line-height:1.6;}
 @media(max-width:600px){.app-main{padding:14px 10px;}.form-row{grid-template-columns:1fr;}.lcard{padding:18px 12px;}}
+
+/* ═══ APPLE GLASS THEME (cream glass + golden border) ═══ */
+:root{--glass:linear-gradient(145deg,rgba(255,253,245,.88),rgba(255,247,225,.66));--gb:#d4a017;--ink:#3b2a0a;--ink2:#6b5320;}
+body{color:var(--ink);background:
+  radial-gradient(circle at 10% 8%,rgba(252,211,77,.40) 0,transparent 38%),
+  radial-gradient(circle at 92% 14%,rgba(56,189,248,.38) 0,transparent 42%),
+  radial-gradient(circle at 55% 100%,rgba(251,207,232,.45) 0,transparent 48%),
+  linear-gradient(160deg,#e0f2fe,#fff8e7 55%,#bae6fd);background-attachment:fixed;}
+.app-header,.app-footer{background:linear-gradient(145deg,rgba(255,253,245,.82),rgba(255,244,214,.68))!important;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:#7c4a03!important;}
+.app-header{border-bottom:2px solid var(--gb)!important;box-shadow:0 8px 28px rgba(160,110,10,.18);}
+.app-footer{border-top:2px solid var(--gb)!important;}
+.title-group h1{color:#7c4a03!important;}
+.title-group p,#liveClock,#liveOnlineDiv{color:#8a5a0b!important;}
+.logo{border-color:#fff;box-shadow:0 0 0 2px var(--gb),0 4px 10px rgba(160,110,10,.3);}
+.card,.modal,.lcard,.award-card,.stat-card,.confirm-box{
+  background:var(--glass)!important;border:1.5px solid var(--gb)!important;
+  backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
+  box-shadow:0 10px 34px rgba(120,80,10,.16),inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.5)!important;color:var(--ink);}
+.lcard{transition:transform .2s;}
+.lcard:hover{transform:translateY(-4px);}
+.lcard:active{transform:translateY(0);}
+.lcard h3,.card-title,.modal h3,.section-title{color:#7c4a03!important;}
+.lcard p{color:var(--ink2)!important;}
+.sc-val{color:#92400e!important;}
+.sc-label{color:var(--ink2)!important;}
+.award-card h4{color:#92400e!important;}
+.award-card p{color:#78350f!important;}
+.confirm-box p{color:#7c4a03;}
+.modal-bg{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(60,40,10,.45);}
+.tab,.chip,.pin-key{background:linear-gradient(145deg,rgba(255,253,245,.9),rgba(255,244,214,.7))!important;border:1.5px solid var(--gb)!important;color:#7c4a03!important;backdrop-filter:blur(10px);box-shadow:0 4px 0 #e6c15a,0 6px 10px rgba(160,110,10,.12)!important;}
+.tab.active{background:linear-gradient(160deg,#fcd34d,#f59e0b)!important;color:#3b2a0a!important;box-shadow:0 2px 0 #b45309!important;}
+.chip[style*="background"]{background:rgba(255,251,235,.85)!important;}
+input,select{background:rgba(255,255,255,.75)!important;border:1.5px solid #e0b640!important;color:var(--ink)!important;}
+input:focus,select:focus{border-color:var(--gb)!important;box-shadow:0 0 0 3px rgba(212,160,23,.25)!important;}
+.form-group label{color:#6b5320;}
+table{border-color:rgba(212,160,23,.35);background:rgba(255,255,255,.35);}
+th{background:rgba(254,243,199,.8)!important;color:#7c4a03!important;border-bottom:2px solid var(--gb)!important;border-right-color:rgba(212,160,23,.3)!important;}
+td{color:var(--ink)!important;border-color:rgba(212,160,23,.25)!important;}
+tr:hover td{background:rgba(252,211,77,.28)!important;}
+.alert{backdrop-filter:blur(8px);}
+.empty,.empty p{color:var(--ink2);}
+p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b"]{color:var(--ink2)!important;}
+[style*="background:#f0f9ff"]{background:rgba(255,251,235,.85)!important;border-color:var(--gb)!important;}
+.back-btn{color:#7c4a03;}
 </style>
 </head>
 <body>
@@ -275,6 +319,7 @@ async function showLanding(){
 
     <div id="dailyQuoteDiv" class="mb-3"></div>
     <div id="panchangDiv" class="mb-3"></div>
+    <div id="lastClassDiv" class="mb-3"></div>
     <div id="birthdayDiv"></div>
     <div id="winnersDiv" class="mb-3"></div>
 
@@ -288,6 +333,7 @@ async function showLanding(){
   `);
   loadDailyQuote();
   loadPanchang();
+  loadLastClass();
   loadBirthdays();
   loadLandingWinners();
   bumpVisitorCount();
@@ -323,28 +369,52 @@ async function loadLandingWinners(){
     const my=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
     const prevD=new Date(d.getFullYear(),d.getMonth()-1,1);
     const prevMy=`${prevD.getFullYear()}-${String(prevD.getMonth()+1).padStart(2,'0')}`;
-
     let data=await dbGet('monthly_awards?month_year=eq.'+my+'&select=award_type,students(name,salutation)');
     let usedMy=my;
     if(!data||!data.length){
       data=await dbGet('monthly_awards?month_year=eq.'+prevMy+'&select=award_type,students(name,salutation)');
       usedMy=prevMy;
     }
+    // Prizes not declared -> show nothing on the main display
     if(!data||!data.length){el.innerHTML='';return;}
     const att=data.filter(x=>x.award_type==='attendance');
     const perf=data.filter(x=>x.award_type==='performance');
+    const blk=(icon,title,list)=>list.length?`<div class="award-card"><div class="tr">${icon}</div><h4>${title}</h4>
+      ${list.map(x=>`<p style="font-weight:700;margin-top:6px;">${x.students?.salutation||''} ${x.students?.name||''}</p>`).join('')}</div>`:'';
+    const blocks=[blk('🏅','सर्वश्रेष्ठ उपस्थिति',att),blk('⭐','सर्वश्रेष्ठ प्रदर्शन',perf)].filter(Boolean);
+    if(!blocks.length){el.innerHTML='';return;}
     el.innerHTML=`
       <div class="card" style="max-width:680px;margin:0 auto;">
         <div class="card-title" style="justify-content:center;">🏆 मासिक विजेता — ${monthLabel(usedMy)}</div>
-        <div class="form-row">
-          <div class="award-card"><div class="tr">🏅</div><h4>सर्वश्रेष्ठ उपस्थिति</h4>
-            ${att.length?att.map(x=>`<p style="color:var(--gold-light);font-weight:700;margin-top:6px;">${x.students?.salutation||''} ${x.students?.name||''}</p>`).join(''):'<p style="color:#bae6fd;font-size:12px;">अभी घोषित नहीं</p>'}
-          </div>
-          <div class="award-card"><div class="tr">⭐</div><h4>सर्वश्रेष्ठ प्रदर्शन</h4>
-            ${perf.length?perf.map(x=>`<p style="color:var(--gold-light);font-weight:700;margin-top:6px;">${x.students?.salutation||''} ${x.students?.name||''}</p>`).join(''):'<p style="color:#bae6fd;font-size:12px;">अभी घोषित नहीं</p>'}
-          </div>
-        </div>
+        <div class="form-row" style="${blocks.length===1?'grid-template-columns:1fr;':''}">${blocks.join('')}</div>
       </div>`;
+  }catch(e){el.innerHTML='';}
+}
+
+// ── LAST COMPLETED CLASS SUMMARY (before login) ──
+async function loadLastClass(){
+  const el=document.getElementById('lastClassDiv');
+  if(!el)return;
+  try{
+    const rows=await dbGet('class_dates?is_active=eq.true&class_date=lte.'+today()+'&order=class_date.desc&limit=1&select=id,class_date');
+    if(!rows||!rows.length){el.innerHTML='';return;}
+    const cd=rows[0];
+    const [stus,att]=await Promise.all([
+      dbGet('students?select=id,joining_date'),
+      dbGet('attendance?class_date_id=eq.'+cd.id+'&select=status')
+    ]);
+    if(!att||!att.length){el.innerHTML='';return;}
+    const total=(stus||[]).filter(s=>!s.joining_date||s.joining_date<=cd.class_date).length;
+    const present=att.filter(r=>r.status==='present').length;
+    const pct=total?Math.round(present/total*100):0;
+    el.innerHTML=`<div class="card" style="max-width:680px;margin:0 auto;">
+      <div class="card-title" style="justify-content:center;">📚 पिछली कक्षा — ${fmtDate(cd.class_date)}</div>
+      <div class="stat-grid" style="margin-bottom:0;">
+        <div class="stat-card"><div class="sc-val">${total}</div><div class="sc-label">कुल विद्यार्थी</div></div>
+        <div class="stat-card"><div class="sc-val">${present}</div><div class="sc-label">उपस्थित</div></div>
+        <div class="stat-card"><div class="sc-val">${pct}%</div><div class="sc-label">उपस्थिति दर</div></div>
+      </div>
+    </div>`;
   }catch(e){el.innerHTML='';}
 }
 function monthLabel(my){
