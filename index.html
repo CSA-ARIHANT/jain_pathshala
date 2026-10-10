@@ -212,7 +212,7 @@ p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b
   </div>
 </header>
 <main class="app-main" id="appMain"><div class="spinner"></div></main>
-<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener"> जैन पंचांग</a></div></footer>
+<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">भीलवाड़ा के पास (~14 कि.मी.) जैन पंचांग</a></div></footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
 <script src="config.js"></script>
@@ -528,7 +528,7 @@ async function loadPanchang(){
 
   let nextClassHtml='';
   try{
-    const todayIso=today.toISOString().split('T')[0];
+    const todayIso=yyyy+'-'+mm+'-'+dd; // local date, not UTC
 
     // 1) Is there an ACTIVE class scheduled for TODAY? → show as "आज की कक्षा"
     const todaysClass=await dbGet('class_dates?class_date=eq.'+todayIso+'&is_active=eq.true&select=class_date&limit=1');
@@ -1423,7 +1423,7 @@ async function loadTeacherRankings(){
   if(!el)return;
   el.innerHTML='<div class="spinner"></div>';
   try{
-    const my=new Date().toISOString().substring(0,7);
+    const my=today().substring(0,7);
     const[attRanked,perfRanked]=await Promise.all([
       computeAttendanceRanking(my),
       computePerformanceRanking(my)
@@ -1987,7 +1987,7 @@ async function showParentView(sid){
 // ── HELPERS ──────────────────────────────────
 function setMain(h){document.getElementById('appMain').innerHTML=h;}
 function g(id){return document.getElementById(id)?.value?.trim()||'';}
-function today(){return new Date().toISOString().split('T')[0];}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');} // local date (not UTC)
 function fmtDate(isoDate){
   if(!isoDate)return '-';
   const d=new Date(isoDate+'T00:00:00');
