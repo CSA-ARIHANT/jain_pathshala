@@ -203,6 +203,8 @@ p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b
 .photo-item{position:relative;}
 .photo-item img{width:100%;height:auto;max-height:65vh;object-fit:contain;display:block;border-radius:10px;border:1.5px solid var(--gb);background:rgba(255,255,255,.6);}
 .photo-grid.n1 .photo-item img,.photo-grid.n3 .photo-item:first-child img{max-height:80vh;}
+a.prot{display:block;position:relative;width:100%;height:0;}
+a.prot img.rotimg{position:absolute;top:50%;left:50%;height:auto;max-height:none!important;transform:translate(-50%,-50%) rotate(-90deg);}
 .stat-grid3{grid-template-columns:repeat(3,1fr);gap:8px;}
 @media(max-width:480px){.stat-grid3 .stat-card{padding:10px 4px;}.stat-grid3 .sc-val{font-size:20px;}.stat-grid3 .sc-label{font-size:10px;}}
 .photo-del{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:#dc2626;color:#fff;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
@@ -2035,6 +2037,20 @@ async function compressImage(file){
   return blob;
 }
 
+// Any photo that is taller than wide is shown turned to landscape, so group photos
+// always use the full width of the screen.
+function fitPhoto(img){
+  const w=img.naturalWidth,h=img.naturalHeight;
+  if(!w||!h||h<=w)return;
+  const a=img.closest('a');
+  if(!a||a.classList.contains('prot'))return;
+  const r=w/h*100;
+  a.classList.add('prot');
+  a.style.paddingBottom=r+'%';
+  img.classList.add('rotimg');
+  img.style.width=r+'%';
+}
+
 // Home page: photos of the most recent class that has photos
 async function loadLandingPhotos(){
   const el=document.getElementById('photoDiv');
@@ -2047,7 +2063,7 @@ async function loadLandingPhotos(){
     if(!rows||!rows.length){el.innerHTML='';return;}
     el.innerHTML=`<div class="card" style="max-width:680px;margin:0 auto;">
       <div class="card-title" style="justify-content:center;">📸 कक्षा चित्र — ${fmtDate(cd)}</div>
-      <div class="photo-grid n${rows.length}">${rows.map(r=>`<a class="photo-item" href="${PHOTO_BASE+r.file_path}" target="_blank" rel="noopener"><img src="${PHOTO_BASE+r.file_path}" loading="lazy" alt="कक्षा चित्र"></a>`).join('')}</div>
+      <div class="photo-grid n${rows.length}">${rows.map(r=>`<a class="photo-item" href="${PHOTO_BASE+r.file_path}" target="_blank" rel="noopener"><img src="${PHOTO_BASE+r.file_path}" loading="lazy" alt="कक्षा चित्र" onload="fitPhoto(this)"></a>`).join('')}</div>
     </div>`;
   }catch(e){el.innerHTML='';}
 }
@@ -2060,7 +2076,7 @@ async function loadPhotoBox(cdId){
     const rows=(await dbGet('class_photos?class_date_id=eq.'+cdId+'&select=id,file_path&order=uploaded_at.asc'))||[];
     el.innerHTML=`<div style="border:1.5px dashed var(--gb);border-radius:10px;padding:12px;">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px;">📸 कक्षा का ग्रुप फोटो (${rows.length}/${MAX_PHOTOS_PER_CLASS})</div>
-      ${rows.length?`<div class="photo-grid n${rows.length}" style="margin-bottom:10px;">${rows.map(r=>`<div class="photo-item"><a href="${PHOTO_BASE+r.file_path}" target="_blank" rel="noopener"><img src="${PHOTO_BASE+r.file_path}" loading="lazy" alt=""></a><button class="photo-del" title="हटाएं" onclick="delClassPhoto('${r.id}','${cdId}')">🗑️</button></div>`).join('')}</div>`:''}
+      ${rows.length?`<div class="photo-grid n${rows.length}" style="margin-bottom:10px;">${rows.map(r=>`<div class="photo-item"><a href="${PHOTO_BASE+r.file_path}" target="_blank" rel="noopener"><img src="${PHOTO_BASE+r.file_path}" loading="lazy" alt="" onload="fitPhoto(this)"></a><button class="photo-del" title="हटाएं" onclick="delClassPhoto('${r.id}','${cdId}')">🗑️</button></div>`).join('')}</div>`:''}
       ${rows.length<MAX_PHOTOS_PER_CLASS
         ?`<label class="btn btn-gold btn-sm" for="photoInp-${cdId}">📷 फोटो जोड़ें</label>
           <input type="file" id="photoInp-${cdId}" accept="image/*" style="display:none;" onchange="uploadClassPhoto('${cdId}',this)">`
