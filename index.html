@@ -224,7 +224,7 @@ a.prot img.rotimg{position:absolute;top:50%;left:50%;height:auto;max-height:none
   </div>
 </header>
 <main class="app-main" id="appMain"><div class="spinner"></div></main>
-<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div></footer>
+<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div><div style="margin-top:4px;font-size:10px;opacity:.55;">v14 • फोटो-रोटेट</div></footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
 <script src="config.js"></script>
@@ -2065,6 +2065,7 @@ async function loadLandingPhotos(){
       <div class="card-title" style="justify-content:center;">📸 कक्षा चित्र — ${fmtDate(cd)}</div>
       <div class="photo-grid n${rows.length}">${rows.map(r=>`<a class="photo-item" href="${PHOTO_BASE+r.file_path}" target="_blank" rel="noopener"><img src="${PHOTO_BASE+r.file_path}" loading="lazy" alt="कक्षा चित्र" onload="fitPhoto(this)"></a>`).join('')}</div>
     </div>`;
+    el.querySelectorAll('img').forEach(i=>{if(i.complete)fitPhoto(i);});
   }catch(e){el.innerHTML='';}
 }
 
@@ -2083,6 +2084,7 @@ async function loadPhotoBox(cdId){
         :`<div class="alert alert-warn" style="margin:0;">अधिकतम ${MAX_PHOTOS_PER_CLASS} फोटो हो गए। नया जोड़ने के लिए पहले कोई फोटो हटाएं।</div>`}
       <div id="photoMsg-${cdId}" class="mt-3"></div>
     </div>`;
+    el.querySelectorAll('img').forEach(i=>{if(i.complete)fitPhoto(i);});
   }catch(e){
     el.innerHTML='<div class="alert alert-warn" style="margin:0;">फोटो सुविधा अभी उपलब्ध नहीं (Supabase setup बाकी हो सकता है)।</div>';
   }
