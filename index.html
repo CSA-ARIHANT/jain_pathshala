@@ -207,6 +207,15 @@ a.prot{display:block;position:relative;width:100%;height:0;}
 a.prot img.rotimg{position:absolute;top:50%;left:50%;height:auto;max-height:none!important;transform:translate(-50%,-50%) rotate(-90deg);}
 .stat-grid3{grid-template-columns:repeat(3,1fr);gap:8px;}
 @media(max-width:480px){.stat-grid3 .stat-card{padding:10px 4px;}.stat-grid3 .sc-val{font-size:20px;}.stat-grid3 .sc-label{font-size:10px;}}
+/* LOGIN CARDS: Admin / Teacher / Parent always in one row */
+.login-cards{grid-template-columns:repeat(3,1fr);gap:10px;max-width:680px;}
+@media(max-width:480px){
+  .login-cards{gap:8px;}
+  .lcard{padding:14px 4px 12px;}
+  .lcard .ic{font-size:28px;margin-bottom:6px;}
+  .lcard h3{font-size:13px;line-height:1.25;margin-bottom:3px;}
+  .lcard p{font-size:10px;line-height:1.25;}
+}
 .photo-del{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:#dc2626;color:#fff;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
 </style>
 </head>
@@ -224,7 +233,7 @@ a.prot img.rotimg{position:absolute;top:50%;left:50%;height:auto;max-height:none
   </div>
 </header>
 <main class="app-main" id="appMain"><div class="spinner"></div></main>
-<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div><div style="margin-top:4px;font-size:10px;opacity:.55;">v14 • फोटो-रोटेट</div></footer>
+<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div><div style="margin-top:4px;font-size:10px;opacity:.55;">v15</div></footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
 <script src="config.js"></script>
