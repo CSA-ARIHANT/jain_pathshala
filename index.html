@@ -217,6 +217,13 @@ a.prot img.rotimg{position:absolute;top:50%;left:50%;height:auto;max-height:none
   .lcard p{font-size:10px;line-height:1.25;}
 }
 .photo-del{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;background:#dc2626;color:#fff;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+
+/* WHATSAPP TAB */
+textarea{width:100%;padding:9px 12px;border-radius:8px;background:#f0f9ff;border:1.5px solid #7dd3fc;color:var(--navy-mid);font-size:14px;font-family:inherit;line-height:1.5;resize:vertical;min-height:150px;}
+textarea:focus{outline:none;border-color:var(--sky-dark);box-shadow:0 0 0 3px rgba(3,105,161,.15);}
+.wa-preview{background:#dcf8c6;border-radius:10px;padding:10px 14px;font-size:13px;white-space:pre-wrap;color:#0c1a2e;border:1px solid #b7e4a0;}
+.wa-sent{opacity:.55;}
+.wa-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;}
 </style>
 </head>
 <body>
@@ -699,6 +706,7 @@ async function showAdmin(){
         <div class="tab" id="at-s" onclick="atab('s')">विद्यार्थी</div>
         <div class="tab" id="at-aw" onclick="atab('aw')">पुरस्कार</div>
         <div class="tab" id="at-mn" onclick="atab('mn')">मासिक</div>
+        <div class="tab" id="at-wa" onclick="atab('wa')">📲 WhatsApp</div>
         <div class="tab" id="at-rs" onclick="atab('rs')">Reset</div>
         <div class="tab" id="at-pin" onclick="atab('pin')">PIN</div>
       </div>
@@ -809,6 +817,74 @@ async function showAdmin(){
         </div>
       </div>
 
+      <div id="ap-wa" class="hidden">
+        <div class="tabs">
+          <div class="tab active" id="wsub-i" onclick="waSub('i')">👨‍👩‍👧 अभिभावक (व्यक्तिगत)</div>
+          <div class="tab" id="wsub-g" onclick="waSub('g')">👥 पाठशाला ग्रुप</div>
+        </div>
+
+        <div id="wp-i">
+          <div class="alert alert-info">नीचे शर्त चुनें — जो विद्यार्थी शर्त में आएंगे उनकी सूची बनेगी। "WhatsApp" बटन दबाने पर संदेश पहले से लिखा हुआ WhatsApp में खुलेगा, आपको सिर्फ़ <b>Send</b> दबाना है।</div>
+          <div class="card mb-3" style="margin-bottom:14px;">
+            <div class="card-title">⚙️ शर्त (Criteria)</div>
+            <div class="form-row">
+              <div class="form-group"><label>माह</label>
+                <select id="waMon" onchange="waLoadList()">${monthOpts()}</select>
+              </div>
+              <div class="form-group"><label>कौन से विद्यार्थी?</label>
+                <select id="waMode" onchange="waLoadList()">
+                  <option value="n">इतनी या अधिक कक्षाएँ छूटीं</option>
+                  <option value="month">पूरे माह की सभी कक्षाएँ छूटीं</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" id="waNWrap" style="max-width:240px;"><label>कम से कम कितनी कक्षाएँ छूटीं</label>
+              <input type="number" id="waN" value="2" min="1" max="10" onchange="waLoadList()">
+            </div>
+            <div class="form-group"><label>✍️ संदेश (बदल सकते हैं)</label>
+              <textarea id="waTpl" oninput="waUpdatePreview()"></textarea>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">उपलब्ध शब्द: {parent} {student} {relation} {month} {summary} {missed} {total}</div>
+            </div>
+            <div class="flex gap-2" style="gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-ghost btn-sm" onclick="waResetTpl()">↩️ मूल संदेश</button>
+              <button class="btn btn-ghost btn-sm" onclick="waClearSent()">🧹 "भेजा गया" निशान हटाएँ</button>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin:12px 0 4px;">👀 नमूना (पहले विद्यार्थी के लिए):</div>
+            <div class="wa-preview" id="waPreview">—</div>
+          </div>
+          <div id="waListDiv"></div>
+        </div>
+
+        <div id="wp-g" class="hidden">
+          <div class="alert alert-warn">WhatsApp ग्रुप में सीधे अपने-आप संदेश भेजना संभव नहीं (WhatsApp की सीमा) — संदेश तैयार होकर खुलता है, ग्रुप चुनकर <b>Send</b> आप दबाते हैं।</div>
+          <div class="card">
+            <div class="card-title">👥 जैन पाठशाला ग्रुप को संदेश</div>
+            <div class="form-group"><label>तैयार संदेश चुनें</label>
+              <select id="waGTplSel" onchange="waGroupTplChange()">
+                <option value="remind">अगली कक्षा की सूचना</option>
+                <option value="regular">नियमित उपस्थिति की अपील</option>
+                <option value="custom">अपना संदेश लिखें</option>
+              </select>
+            </div>
+            <div class="form-group"><label>✍️ संदेश</label>
+              <textarea id="waGMsg" oninput="waGroupPreview()"></textarea>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">उपलब्ध शब्द: {next_class} (अगली कक्षा की तारीख)</div>
+            </div>
+            <div class="form-group"><label>🔗 ग्रुप का Invite Link (एक बार डालें, याद रहेगा)</label>
+              <input type="url" id="waGLink" placeholder="https://chat.whatsapp.com/xxxxxxxx" onchange="waSaveGroupLink()">
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:4px;">👀 नमूना:</div>
+            <div class="wa-preview" id="waGPreview" style="margin-bottom:14px;">—</div>
+            <div class="flex" style="gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-green" onclick="waGroupSend()">📲 WhatsApp खोलें (ग्रुप चुनें)</button>
+              <button class="btn btn-sky" onclick="waGroupOpenLink()">👥 ग्रुप खोलें + संदेश कॉपी</button>
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:10px;">पहला बटन: संदेश भरकर WhatsApp खुलेगा, सूची में से "जैन पाठशाला" ग्रुप चुनें। दूसरा बटन: संदेश कॉपी होकर सीधे ग्रुप खुलेगा — वहाँ Paste करके Send दबाएँ।</div>
+            <div id="waGMsgOut" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="ap-pin" class="hidden">
         <div class="card" style="max-width:360px;">
           <div class="card-title">🔐 PIN बदलें</div>
@@ -826,10 +902,11 @@ async function showAdmin(){
 }
 
 function atab(t){
-  ['t','s','aw','mn','rs','pin'].forEach(x=>{
+  ['t','s','aw','mn','wa','rs','pin'].forEach(x=>{
     document.getElementById('at-'+x)?.classList.toggle('active',x===t);
     document.getElementById('ap-'+x)?.classList.toggle('hidden',x!==t);
   });
+if(t==='wa'){waInit();}
 if(t==='rs'){
   loadRsDates();
   loadTeacherPinDropdown();
@@ -2171,6 +2248,255 @@ function toast(msg,dur=2500){
   if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0c4a6e,#075985);color:#fcd34d;padding:10px 22px;border-radius:30px;font-weight:700;font-size:14px;z-index:999;box-shadow:0 4px 12px rgba(12,42,78,.4);pointer-events:none;transition:opacity .3s;border:2px solid var(--gold);';document.body.appendChild(t);}
   t.textContent=msg;t.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>t.style.opacity='0',dur);
 }
+
+// ── WHATSAPP (Admin): अभिभावक + ग्रुप ──────────────────
+const WA_DEF_TPL=`🙏 जय जिनेन्द्र {parent} जी,
+
+श्री अरिहंत विकास समिति जैन पाठशाला की ओर से सूचना —
+{relation} {student} {month} माह में {summary}।
+
+कृपया बच्चे को नियमित रूप से पाठशाला भेजें। कोई समस्या हो तो हमें अवश्य बताएँ।
+
+धन्यवाद 🙏`;
+const WA_GROUP_TPL={
+  remind:`🙏 जय जिनेन्द्र!
+
+जैन पाठशाला की अगली कक्षा {next_class} को है।
+सभी बच्चों को समय पर पाठशाला भेजें।
+
+धन्यवाद 🙏
+श्री अरिहंत विकास समिति`,
+  regular:`🙏 जय जिनेन्द्र!
+
+सभी अभिभावकों से निवेदन है कि बच्चों को नियमित रूप से जैन पाठशाला भेजें। नियमित उपस्थिति से बच्चों में धार्मिक संस्कार मज़बूत होते हैं।
+
+धन्यवाद 🙏
+श्री अरिहंत विकास समिति`,
+  custom:''
+};
+let _waRows=[],_waInit=false,_waNextClass='';
+
+function waSub(s){
+  ['i','g'].forEach(x=>{
+    document.getElementById('wsub-'+x)?.classList.toggle('active',x===s);
+    document.getElementById('wp-'+x)?.classList.toggle('hidden',x!==s);
+  });
+  if(s==='g')waGroupInit();
+}
+
+function waInit(){
+  if(!_waInit){
+    _waInit=true;
+    const tpl=document.getElementById('waTpl');
+    if(tpl)tpl.value=localStorage.getItem('jpWaTpl')||WA_DEF_TPL;
+  }
+  waLoadList();
+}
+function waResetTpl(){
+  localStorage.removeItem('jpWaTpl');
+  document.getElementById('waTpl').value=WA_DEF_TPL;
+  waUpdatePreview();
+}
+
+// Phone → WhatsApp number (India default). Returns '' if invalid.
+function waPhone(p){
+  let d=String(p||'').replace(/\D/g,'');
+  if(d.length===12&&d.startsWith('91'))return d;
+  if(d.length===11&&d.startsWith('0'))d=d.slice(1);
+  if(d.length===10)return '91'+d;
+  return '';
+}
+function waOpen(url){window.open(url,'_blank','noopener');}
+
+async function waFetchAll(path){
+  let out=[],off=0;const step=1000;
+  while(true){
+    const rows=await dbGet(path+'&limit='+step+'&offset='+off);
+    out=out.concat(rows||[]);
+    if(!rows||rows.length<step)break;
+    off+=step;
+  }
+  return out;
+}
+
+function waSentKey(my){return 'jpWaSent-'+my;}
+function waSentGet(my){try{return JSON.parse(localStorage.getItem(waSentKey(my))||'{}');}catch(e){return {};}}
+function waSentSet(my,o){localStorage.setItem(waSentKey(my),JSON.stringify(o));}
+function waClearSent(){
+  const my=g('waMon');
+  if(!confirm('इस माह के सभी "भेजा गया" निशान हटाएँ?'))return;
+  localStorage.removeItem(waSentKey(my));
+  waRenderList();
+}
+
+async function waLoadList(){
+  const my=g('waMon');if(!my)return;
+  const nWrap=document.getElementById('waNWrap');
+  if(nWrap)nWrap.style.display=g('waMode')==='n'?'':'none';
+  const el=document.getElementById('waListDiv');if(!el)return;
+  el.innerHTML='<div class="spinner"></div>';
+  try{
+    const [dates,att,students]=await Promise.all([
+      dbGet('class_dates?month_year=eq.'+my+'&select=id,class_date,is_active&order=class_date'),
+      waFetchAll('attendance?month_year=eq.'+my+'&select=student_id,class_date_id,status&order=id'),
+      dbGet('students?select=id,salutation,name,class,father_name,father_phone,mother_name,mother_phone,joining_date&order=name')
+    ]);
+    // Count only classes that were held (active, not in the future) AND for which attendance was actually taken
+    const marked=new Set((att||[]).map(r=>r.class_date_id));
+    const held=(dates||[]).filter(d=>d.is_active&&d.class_date<=today()&&marked.has(d.id));
+    const presentBy={};
+    (att||[]).forEach(r=>{if(r.status==='present'){(presentBy[r.student_id]=presentBy[r.student_id]||new Set()).add(r.class_date_id);}});
+    const mode=g('waMode'),n=Math.max(1,parseInt(g('waN'))||2);
+    const rows=[];
+    (students||[]).forEach(s=>{
+      // A student is only expected in classes on/after their joining date
+      const elig=held.filter(d=>!s.joining_date||d.class_date>=s.joining_date);
+      const total=elig.length;if(!total)return;
+      const pres=presentBy[s.id]||new Set();
+      const missed=elig.filter(d=>!pres.has(d.id)).length;
+      const hit=mode==='month'?(missed===total):(missed>=n);
+      if(hit)rows.push({s,missed,total});
+    });
+    rows.sort((a,b)=>b.missed-a.missed||(a.s.name||'').localeCompare(b.s.name||''));
+    _waRows=rows;
+    el.dataset.heldCount=held.length;
+    waRenderList();
+  }catch(e){el.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;}
+}
+
+function waSummary(missed,total){
+  return missed===total
+    ? `पूरे माह की सभी ${total} कक्षाओं में उपस्थित नहीं हो पाए`
+    : `${total} में से ${missed} कक्षाओं में उपस्थित नहीं हो पाए`;
+}
+function waBuildMsg(row,parentName){
+  const tpl=document.getElementById('waTpl')?.value||WA_DEF_TPL;
+  const s=row.s,my=g('waMon');
+  const map={
+    parent:parentName||'अभिभावक',
+    student:((s.salutation?s.salutation+' ':'')+s.name).trim(),
+    relation:s.salutation==='Ms'?'आपकी पुत्री':'आपके पुत्र',
+    month:monthLabel(my),
+    summary:waSummary(row.missed,row.total),
+    missed:row.missed,total:row.total
+  };
+  return tpl.replace(/\{(\w+)\}/g,(m,k)=>k in map?map[k]:m);
+}
+function waUpdatePreview(){
+  const tpl=document.getElementById('waTpl');
+  if(tpl)localStorage.setItem('jpWaTpl',tpl.value);
+  const pv=document.getElementById('waPreview');if(!pv)return;
+  const r=_waRows[0];
+  pv.textContent=r?waBuildMsg(r,r.s.father_name||r.s.mother_name):'(शर्त में कोई विद्यार्थी नहीं)';
+}
+
+function waRenderList(){
+  const el=document.getElementById('waListDiv');if(!el)return;
+  const my=g('waMon');
+  const held=parseInt(el.dataset.heldCount||'0');
+  waUpdatePreview();
+  if(!held){
+    el.innerHTML='<div class="alert alert-warn">इस माह में अभी तक किसी कक्षा की उपस्थिति दर्ज नहीं हुई, इसलिए सूची नहीं बन सकती।</div>';
+    return;
+  }
+  if(!_waRows.length){
+    el.innerHTML=`<div class="empty"><div>🎉</div><p>इस शर्त में कोई विद्यार्थी नहीं (इस माह ${held} कक्षाएँ हुईं)।</p></div>`;
+    return;
+  }
+  const sent=waSentGet(my);
+  const btn=(sid,who,name,phone)=>{
+    if(!name&&!phone)return '<span style="color:#94a3b8;">-</span>';
+    const num=waPhone(phone);
+    const done=sent[sid+'-'+who];
+    if(!num)return `<div style="font-size:12px;">${name||''}<br><span style="color:#b91c1c;">📵 नंबर सही नहीं${phone?' ('+phone+')':''}</span></div>`;
+    return `<div style="font-size:12px;margin-bottom:3px;">${name||''}</div>
+      <button class="btn ${done?'btn-ghost':'btn-green'} btn-sm" onclick="waSendOne('${sid}','${who}')">${done?'✓ भेजा (फिर से?)':'📲 WhatsApp'}</button>`;
+  };
+  el.innerHTML=`
+    <div class="section-title" style="font-size:15px;">${monthLabel(my)} — ${_waRows.length} विद्यार्थी (इस माह ${held} कक्षाएँ हुईं)</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>विद्यार्थी</th><th>छूटीं</th><th>पिता</th><th>माता</th></tr></thead>
+      <tbody>${_waRows.map((r,i)=>{
+        const s=r.s;
+        const both=sent[s.id+'-f']&&sent[s.id+'-m'];
+        return `<tr class="${(sent[s.id+'-f']||sent[s.id+'-m'])?'wa-sent':''}">
+          <td>${i+1}</td>
+          <td><b>${s.salutation||''} ${s.name}</b>${s.class?'<div style="font-size:11px;color:#64748b;">कक्षा '+s.class+'</div>':''}</td>
+          <td><span class="wa-badge">${r.missed}/${r.total}</span></td>
+          <td>${btn(s.id,'f',s.father_name,s.father_phone)}</td>
+          <td>${btn(s.id,'m',s.mother_name,s.mother_phone)}</td>
+        </tr>`;}).join('')}</tbody>
+    </table></div>`;
+}
+
+function waSendOne(sid,who){
+  const row=_waRows.find(r=>r.s.id===sid);if(!row)return;
+  const s=row.s;
+  const name=who==='f'?s.father_name:s.mother_name;
+  const phone=who==='f'?s.father_phone:s.mother_phone;
+  const num=waPhone(phone);
+  if(!num){toast('❌ मोबाइल नंबर सही नहीं');return;}
+  const msg=waBuildMsg(row,name);
+  waOpen('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+  const my=g('waMon');
+  const sent=waSentGet(my);sent[sid+'-'+who]=Date.now();waSentSet(my,sent);
+  setTimeout(waRenderList,300);
+}
+
+// ── Group ──
+async function waGroupInit(){
+  const link=document.getElementById('waGLink');
+  if(link&&!link.value)link.value=localStorage.getItem('jpWaGroupLink')||'';
+  if(!_waNextClass){
+    try{
+      const rows=await dbGet('class_dates?is_active=eq.true&class_date=gte.'+today()+'&select=class_date&order=class_date&limit=1');
+      _waNextClass=rows?.[0]?.class_date?fmtDate(rows[0].class_date):'(तारीख लिखें)';
+    }catch(e){_waNextClass='(तारीख लिखें)';}
+  }
+  const ta=document.getElementById('waGMsg');
+  if(ta&&!ta.value)waGroupTplChange();
+  else waGroupPreview();
+}
+function waGroupTplChange(){
+  const k=g('waGTplSel');
+  document.getElementById('waGMsg').value=WA_GROUP_TPL[k]||'';
+  waGroupPreview();
+}
+function waGroupText(){
+  return (document.getElementById('waGMsg')?.value||'').replace(/\{next_class\}/g,_waNextClass||'(तारीख लिखें)');
+}
+function waGroupPreview(){
+  const pv=document.getElementById('waGPreview');if(!pv)return;
+  pv.textContent=waGroupText()||'(संदेश लिखें)';
+}
+function waSaveGroupLink(){
+  const v=g('waGLink');
+  if(v)localStorage.setItem('jpWaGroupLink',v);else localStorage.removeItem('jpWaGroupLink');
+}
+function waGroupSend(){
+  const msg=waGroupText();
+  if(!msg){toast('पहले संदेश लिखें');return;}
+  waOpen('https://wa.me/?text='+encodeURIComponent(msg));
+}
+async function waGroupOpenLink(){
+  const msg=waGroupText();
+  const link=g('waGLink');
+  const out=document.getElementById('waGMsgOut');
+  if(!msg){toast('पहले संदेश लिखें');return;}
+  if(!/^https:\/\/chat\.whatsapp\.com\//.test(link)){
+    out.innerHTML='<div class="alert alert-err">ऊपर ग्रुप का Invite Link डालें (https://chat.whatsapp.com/...)। WhatsApp ग्रुप → Group info → Invite via link से मिलेगा।</div>';
+    return;
+  }
+  waSaveGroupLink();
+  try{
+    await navigator.clipboard.writeText(msg);
+    out.innerHTML='<div class="alert alert-ok">✅ संदेश कॉपी हो गया — ग्रुप खुलने पर Paste करके Send दबाएँ।</div>';
+  }catch(e){
+    out.innerHTML='<div class="alert alert-warn">कॉपी नहीं हो पाया — नमूना से संदेश हाथ से कॉपी कर लें।</div>';
+  }
+  waOpen(link);
+}
+
 document.getElementById('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal();});
 </script>
 </body>
