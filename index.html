@@ -824,26 +824,29 @@ async function showAdmin(){
         </div>
 
         <div id="wp-i">
-          <div class="alert alert-info">नीचे शर्त चुनें — जो विद्यार्थी शर्त में आएंगे उनकी सूची बनेगी। "WhatsApp" बटन दबाने पर संदेश पहले से लिखा हुआ WhatsApp में खुलेगा, आपको सिर्फ़ <b>Send</b> दबाना है।</div>
+          <div class="alert alert-info">माह (एक या कई माह) और शर्त चुनें। एक ही अभिभावक (नाम + मोबाइल समान) के सभी बच्चों का <b>एक ही संदेश</b> बनेगा। "WhatsApp" बटन दबाने पर संदेश तैयार खुलेगा — आपको सिर्फ़ <b>Send</b> दबाना है।</div>
           <div class="card mb-3" style="margin-bottom:14px;">
             <div class="card-title">⚙️ शर्त (Criteria)</div>
             <div class="form-row">
-              <div class="form-group"><label>माह</label>
-                <select id="waMon" onchange="waLoadList()">${monthOpts()}</select>
+              <div class="form-group"><label>माह से (From)</label>
+                <select id="waFrom" onchange="waLoadList()">${monthOpts()}</select>
               </div>
-              <div class="form-group"><label>कौन से विद्यार्थी?</label>
-                <select id="waMode" onchange="waLoadList()">
-                  <option value="n">इतनी या अधिक कक्षाएँ छूटीं</option>
-                  <option value="month">पूरे माह की सभी कक्षाएँ छूटीं</option>
-                </select>
+              <div class="form-group"><label>माह तक (To)</label>
+                <select id="waTo" onchange="waLoadList()">${monthOpts()}</select>
               </div>
+            </div>
+            <div class="form-group"><label>कौन से विद्यार्थी?</label>
+              <select id="waMode" onchange="waLoadList()">
+                <option value="n">चुनी अवधि में इतनी या अधिक कक्षाएँ छूटीं</option>
+                <option value="month">चुनी अवधि की सभी कक्षाएँ छूटीं</option>
+              </select>
             </div>
             <div class="form-group" id="waNWrap" style="max-width:240px;"><label>कम से कम कितनी कक्षाएँ छूटीं</label>
               <input type="number" id="waN" value="2" min="1" max="10" onchange="waLoadList()">
             </div>
             <div class="form-group"><label>✍️ संदेश (बदल सकते हैं)</label>
               <textarea id="waTpl" oninput="waUpdatePreview()"></textarea>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">उपलब्ध शब्द: {parent} {student} {relation} {month} {summary} {missed} {total}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">उपलब्ध शब्द: {parent} (अभिभावक का नाम) {summary} (बच्चे/बच्चों का विवरण अपने-आप बनता है) {period}</div>
             </div>
             <div class="flex gap-2" style="gap:8px;flex-wrap:wrap;">
               <button class="btn btn-ghost btn-sm" onclick="waResetTpl()">↩️ मूल संदेश</button>
@@ -2253,9 +2256,9 @@ function toast(msg,dur=2500){
 const WA_DEF_TPL=`🙏 जय जिनेन्द्र {parent} जी,
 
 श्री अरिहंत विकास समिति जैन पाठशाला की ओर से सूचना —
-{relation} {student} {month} माह में {summary}।
+{summary}
 
-कृपया बच्चे को नियमित रूप से पाठशाला भेजें। कोई समस्या हो तो हमें अवश्य बताएँ।
+कृपया बच्चों को नियमित रूप से पाठशाला भेजें। कोई समस्या हो तो हमें अवश्य बताएँ।
 
 धन्यवाद 🙏`;
 const WA_GROUP_TPL={
@@ -2274,7 +2277,7 @@ const WA_GROUP_TPL={
 श्री अरिहंत विकास समिति`,
   custom:''
 };
-let _waRows=[],_waInit=false,_waNextClass='';
+let _waRows=[],_waRecips=[],_waNoPhone=[],_waInit=false,_waNextClass='';
 
 function waSub(s){
   ['i','g'].forEach(x=>{
@@ -2283,17 +2286,16 @@ function waSub(s){
   });
   if(s==='g')waGroupInit();
 }
-
 function waInit(){
   if(!_waInit){
     _waInit=true;
     const tpl=document.getElementById('waTpl');
-    if(tpl)tpl.value=localStorage.getItem('jpWaTpl')||WA_DEF_TPL;
+    if(tpl)tpl.value=localStorage.getItem('jpWaTpl2')||WA_DEF_TPL;
   }
   waLoadList();
 }
 function waResetTpl(){
-  localStorage.removeItem('jpWaTpl');
+  localStorage.removeItem('jpWaTpl2');
   document.getElementById('waTpl').value=WA_DEF_TPL;
   waUpdatePreview();
 }
@@ -2319,26 +2321,48 @@ async function waFetchAll(path){
   return out;
 }
 
-function waSentKey(my){return 'jpWaSent-'+my;}
-function waSentGet(my){try{return JSON.parse(localStorage.getItem(waSentKey(my))||'{}');}catch(e){return {};}}
-function waSentSet(my,o){localStorage.setItem(waSentKey(my),JSON.stringify(o));}
+// ── selected months (From..To, inclusive) ──
+function waMonths(){
+  let a=g('waFrom'),b=g('waTo');
+  if(!a||!b)return [];
+  if(a>b){const x=a;a=b;b=x;}
+  const out=[];let [y,m]=a.split('-').map(Number);const [ey,em]=b.split('-').map(Number);
+  while(y<ey||(y===ey&&m<=em)){
+    out.push(y+'-'+String(m).padStart(2,'0'));
+    m++;if(m>12){m=1;y++;}
+    if(out.length>24)break;
+  }
+  return out;
+}
+function waPeriodLabel(){
+  const ms=waMonths();if(!ms.length)return '';
+  return ms.length===1?monthLabel(ms[0])+' माह में':monthLabel(ms[0])+' से '+monthLabel(ms[ms.length-1])+' के बीच';
+}
+function waPeriodId(){const ms=waMonths();return ms.length?ms[0]+'_'+ms[ms.length-1]:'';}
+
+function waSentKey(){return 'jpWaSent2-'+waPeriodId();}
+function waSentGet(){try{return JSON.parse(localStorage.getItem(waSentKey())||'{}');}catch(e){return {};}}
+function waSentSet(o){localStorage.setItem(waSentKey(),JSON.stringify(o));}
 function waClearSent(){
-  const my=g('waMon');
-  if(!confirm('इस माह के सभी "भेजा गया" निशान हटाएँ?'))return;
-  localStorage.removeItem(waSentKey(my));
+  if(!confirm('इस अवधि के सभी "भेजा गया" निशान हटाएँ?'))return;
+  localStorage.removeItem(waSentKey());
   waRenderList();
 }
 
+const waNm=s=>((s.salutation?s.salutation+' ':'')+s.name).trim();
+const waNorm=x=>String(x||'').toLowerCase().replace(/^\s*(shri|shree|smt|sh|mr|mrs|ms)\.?\s+/,'').replace(/[^\p{L}\p{M}\p{N}]+/gu,' ').trim();
+
 async function waLoadList(){
-  const my=g('waMon');if(!my)return;
+  const months=waMonths();if(!months.length)return;
   const nWrap=document.getElementById('waNWrap');
   if(nWrap)nWrap.style.display=g('waMode')==='n'?'':'none';
   const el=document.getElementById('waListDiv');if(!el)return;
   el.innerHTML='<div class="spinner"></div>';
   try{
+    const inList=months.join(',');
     const [dates,att,students]=await Promise.all([
-      dbGet('class_dates?month_year=eq.'+my+'&select=id,class_date,is_active&order=class_date'),
-      waFetchAll('attendance?month_year=eq.'+my+'&select=student_id,class_date_id,status&order=id'),
+      dbGet('class_dates?month_year=in.('+inList+')&select=id,class_date,is_active&order=class_date'),
+      waFetchAll('attendance?month_year=in.('+inList+')&select=student_id,class_date_id,status&order=id'),
       dbGet('students?select=id,salutation,name,class,father_name,father_phone,mother_name,mother_phone,joining_date&order=name')
     ]);
     // Count only classes that were held (active, not in the future) AND for which attendance was actually taken
@@ -2359,87 +2383,97 @@ async function waLoadList(){
     });
     rows.sort((a,b)=>b.missed-a.missed||(a.s.name||'').localeCompare(b.s.name||''));
     _waRows=rows;
+    waBuildRecipients();
     el.dataset.heldCount=held.length;
     waRenderList();
   }catch(e){el.innerHTML=`<div class="alert alert-err">Error: ${e.message}</div>`;}
 }
 
-function waSummary(missed,total){
-  return missed===total
-    ? `पूरे माह की सभी ${total} कक्षाओं में उपस्थित नहीं हो पाए`
-    : `${total} में से ${missed} कक्षाओं में उपस्थित नहीं हो पाए`;
+// One recipient = one parent (same name + same mobile). All their flagged children go in ONE message.
+function waBuildRecipients(){
+  const map=new Map();_waNoPhone=[];
+  _waRows.forEach(row=>{
+    let got=false;
+    [['f',row.s.father_name,row.s.father_phone],['m',row.s.mother_name,row.s.mother_phone]].forEach(([role,name,phone])=>{
+      const num=waPhone(phone);if(!num)return;
+      const key=num+'|'+waNorm(name);
+      if(!map.has(key))map.set(key,{num,name:name||'',role,kids:[]});
+      const r=map.get(key);if(!r.kids.includes(row))r.kids.push(row);
+      got=true;
+    });
+    if(!got)_waNoPhone.push(row);
+  });
+  // If father & mother have the SAME number and the SAME children, send just one message to that number
+  const merged=new Map();
+  map.forEach(r=>{
+    const k=r.num+'|'+r.kids.map(x=>x.s.id).sort().join(',');
+    if(merged.has(k)){
+      const m=merged.get(k);
+      if(r.name&&!m.name.includes(r.name))m.name=(m.name?m.name+' एवं ':'')+r.name;
+      if(!m.role.includes(r.role))m.role='b';
+    }else merged.set(k,{...r});
+  });
+  _waRecips=[...merged.values()].map(r=>{r.key=r.num+'|'+waNorm(r.name)+'|'+r.kids.map(x=>x.s.id).sort().join(',');return r;});
+  _waRecips.sort((a,b)=>Math.max(...b.kids.map(k=>k.missed))-Math.max(...a.kids.map(k=>k.missed))||b.kids.length-a.kids.length||(a.name||'').localeCompare(b.name||''));
 }
-function waBuildMsg(row,parentName){
+
+function waBuildMsg(rec){
   const tpl=document.getElementById('waTpl')?.value||WA_DEF_TPL;
-  const s=row.s,my=g('waMon');
-  const map={
-    parent:parentName||'अभिभावक',
-    student:((s.salutation?s.salutation+' ':'')+s.name).trim(),
-    relation:s.salutation==='Ms'?'आपकी पुत्री':'आपके पुत्र',
-    month:monthLabel(my),
-    summary:waSummary(row.missed,row.total),
-    missed:row.missed,total:row.total
-  };
+  const period=waPeriodLabel();
+  const rel=s=>s.salutation==='Ms'?'आपकी पुत्री':'आपके पुत्र';
+  const part=k=>k.missed===k.total?`सभी ${k.total} कक्षाओं में`:`${k.total} में से ${k.missed} कक्षाओं में`;
+  let summary;
+  if(rec.kids.length===1){
+    const k=rec.kids[0];
+    summary=`${rel(k.s)} ${waNm(k.s)} ${period} ${part(k)} उपस्थित नहीं हो पाए।`;
+  }else{
+    summary=`आपके बच्चे ${period} उपस्थित नहीं हो पाए:\n`+rec.kids.map(k=>`• ${waNm(k.s)} — ${k.missed===k.total?`सभी ${k.total} कक्षाएँ छूटीं`:`${k.total} में से ${k.missed} कक्षाएँ छूटीं`}`).join('\n');
+  }
+  const map={parent:rec.name||'अभिभावक',summary,period};
   return tpl.replace(/\{(\w+)\}/g,(m,k)=>k in map?map[k]:m);
 }
 function waUpdatePreview(){
   const tpl=document.getElementById('waTpl');
-  if(tpl)localStorage.setItem('jpWaTpl',tpl.value);
+  if(tpl)localStorage.setItem('jpWaTpl2',tpl.value);
   const pv=document.getElementById('waPreview');if(!pv)return;
-  const r=_waRows[0];
-  pv.textContent=r?waBuildMsg(r,r.s.father_name||r.s.mother_name):'(शर्त में कोई विद्यार्थी नहीं)';
+  const r=_waRecips.find(x=>x.kids.length>1)||_waRecips[0];
+  pv.textContent=r?waBuildMsg(r):'(शर्त में कोई विद्यार्थी नहीं)';
 }
 
 function waRenderList(){
   const el=document.getElementById('waListDiv');if(!el)return;
-  const my=g('waMon');
   const held=parseInt(el.dataset.heldCount||'0');
   waUpdatePreview();
   if(!held){
-    el.innerHTML='<div class="alert alert-warn">इस माह में अभी तक किसी कक्षा की उपस्थिति दर्ज नहीं हुई, इसलिए सूची नहीं बन सकती।</div>';
+    el.innerHTML='<div class="alert alert-warn">चुनी अवधि में अभी तक किसी कक्षा की उपस्थिति दर्ज नहीं हुई, इसलिए सूची नहीं बन सकती।</div>';
     return;
   }
   if(!_waRows.length){
-    el.innerHTML=`<div class="empty"><div>🎉</div><p>इस शर्त में कोई विद्यार्थी नहीं (इस माह ${held} कक्षाएँ हुईं)।</p></div>`;
+    el.innerHTML=`<div class="empty"><div>🎉</div><p>इस शर्त में कोई विद्यार्थी नहीं (चुनी अवधि में ${held} कक्षाएँ हुईं)।</p></div>`;
     return;
   }
-  const sent=waSentGet(my);
-  const btn=(sid,who,name,phone)=>{
-    if(!name&&!phone)return '<span style="color:#94a3b8;">-</span>';
-    const num=waPhone(phone);
-    const done=sent[sid+'-'+who];
-    if(!num)return `<div style="font-size:12px;">${name||''}<br><span style="color:#b91c1c;">📵 नंबर सही नहीं${phone?' ('+phone+')':''}</span></div>`;
-    return `<div style="font-size:12px;margin-bottom:3px;">${name||''}</div>
-      <button class="btn ${done?'btn-ghost':'btn-green'} btn-sm" onclick="waSendOne('${sid}','${who}')">${done?'✓ भेजा (फिर से?)':'📲 WhatsApp'}</button>`;
-  };
+  const sent=waSentGet();
+  const roleTxt={f:'पिता',m:'माता',b:'पिता / माता'};
+  const noPhone=_waNoPhone.length?`<div class="alert alert-warn" style="margin-top:12px;">📵 इन विद्यार्थियों के अभिभावक का मोबाइल नंबर नहीं है / सही नहीं है: <b>${_waNoPhone.map(r=>waNm(r.s)).join(', ')}</b></div>`:'';
   el.innerHTML=`
-    <div class="section-title" style="font-size:15px;">${monthLabel(my)} — ${_waRows.length} विद्यार्थी (इस माह ${held} कक्षाएँ हुईं)</div>
+    <div class="section-title" style="font-size:15px;">${waPeriodLabel().replace(/ में$/,'')} — ${_waRows.length} विद्यार्थी, ${_waRecips.length} संदेश (चुनी अवधि में ${held} कक्षाएँ हुईं)</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>विद्यार्थी</th><th>छूटीं</th><th>पिता</th><th>माता</th></tr></thead>
-      <tbody>${_waRows.map((r,i)=>{
-        const s=r.s;
-        const both=sent[s.id+'-f']&&sent[s.id+'-m'];
-        return `<tr class="${(sent[s.id+'-f']||sent[s.id+'-m'])?'wa-sent':''}">
+      <thead><tr><th>#</th><th>अभिभावक</th><th>बच्चे (छूटीं/कुल)</th><th>भेजें</th></tr></thead>
+      <tbody>${_waRecips.map((r,i)=>{
+        const done=sent[r.key];
+        return `<tr class="${done?'wa-sent':''}">
           <td>${i+1}</td>
-          <td><b>${s.salutation||''} ${s.name}</b>${s.class?'<div style="font-size:11px;color:#64748b;">कक्षा '+s.class+'</div>':''}</td>
-          <td><span class="wa-badge">${r.missed}/${r.total}</span></td>
-          <td>${btn(s.id,'f',s.father_name,s.father_phone)}</td>
-          <td>${btn(s.id,'m',s.mother_name,s.mother_phone)}</td>
+          <td><b>${r.name||'अभिभावक'}</b><div style="font-size:11px;color:#64748b;">${roleTxt[r.role]} · 📱 ${r.num.slice(2)}</div></td>
+          <td>${r.kids.map(k=>`<div style="margin-bottom:3px;">${waNm(k.s)} <span class="wa-badge">${k.missed}/${k.total}</span></div>`).join('')}</td>
+          <td><button class="btn ${done?'btn-ghost':'btn-green'} btn-sm" onclick="waSendRecip(${i})">${done?'✓ भेजा (फिर से?)':'📲 WhatsApp'}</button></td>
         </tr>`;}).join('')}</tbody>
-    </table></div>`;
+    </table></div>${noPhone}`;
 }
 
-function waSendOne(sid,who){
-  const row=_waRows.find(r=>r.s.id===sid);if(!row)return;
-  const s=row.s;
-  const name=who==='f'?s.father_name:s.mother_name;
-  const phone=who==='f'?s.father_phone:s.mother_phone;
-  const num=waPhone(phone);
-  if(!num){toast('❌ मोबाइल नंबर सही नहीं');return;}
-  const msg=waBuildMsg(row,name);
-  waOpen('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
-  const my=g('waMon');
-  const sent=waSentGet(my);sent[sid+'-'+who]=Date.now();waSentSet(my,sent);
+function waSendRecip(i){
+  const rec=_waRecips[i];if(!rec)return;
+  waOpen('https://wa.me/'+rec.num+'?text='+encodeURIComponent(waBuildMsg(rec)));
+  const sent=waSentGet();sent[rec.key]=Date.now();waSentSet(sent);
   setTimeout(waRenderList,300);
 }
 
