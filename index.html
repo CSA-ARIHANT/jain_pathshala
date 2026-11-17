@@ -449,11 +449,11 @@ async function loadLastClass(){
     if(!rows||!rows.length){el.innerHTML='';return;}
     const cd=rows[0];
     const [stus,att]=await Promise.all([
-      dbGet('students?select=id,joining_date'),
+      dbGet('students?select=id,joining_date,is_active'),
       dbGet('attendance?class_date_id=eq.'+cd.id+'&select=status')
     ]);
     if(!att||!att.length){el.innerHTML='';return;}
-    const total=(stus||[]).filter(s=>!s.joining_date||s.joining_date<=cd.class_date).length;
+    const total=(stus||[]).filter(s=>s.is_active!==false&&(!s.joining_date||s.joining_date<=cd.class_date)).length;
     const present=att.filter(r=>r.status==='present').length;
     const pct=total?Math.round(present/total*100):0;
     el.innerHTML=`<div class="card" style="max-width:680px;margin:0 auto;">
@@ -483,7 +483,7 @@ async function loadBirthdays(targetId='birthdayDiv'){
     const tMM=String(today.getMonth()+1).padStart(2,'0'),tDD=String(today.getDate()).padStart(2,'0');
     const mMM=String(tomorrow.getMonth()+1).padStart(2,'0'),mDD=String(tomorrow.getDate()).padStart(2,'0');
 
-    const students=await dbGet('students?select=name,salutation,dob');
+    const students=((await dbGet('students?select=name,salutation,dob,is_active'))||[]).filter(s=>s.is_active!==false);
     let teachers=[];
     try{ teachers=await dbGet('teachers?select=name,salutation,dob'); }catch(e){ teachers=[]; }
 
@@ -690,7 +690,7 @@ async function showAdmin(){
       dbGet('students?order=name'),
       dbGet('admin_config?limit=1')
     ]);
-    const tc=teachers?.length||0,sc=students?.length||0;
+    const tc=teachers?.length||0,sc=(students||[]).filter(x=>x.is_active!==false).length;
     const acAtt=cfg?.[0]?.attendance_award_count??cfg?.[0]?.award_count??2;
     const acPerf=cfg?.[0]?.performance_award_count??cfg?.[0]?.award_count??2;
     setMain(`
@@ -736,10 +736,10 @@ async function showAdmin(){
 
       <div id="ap-s" class="hidden">
         <div class="alert alert-info mb-3">सभी शिक्षकों को ये विद्यार्थी दिखते हैं — साझा कक्षा।</div>
-        ${!sc?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
+        ${!(students&&students.length)?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
-          <thead><tr><th>#</th><th>नाम</th><th>पिता</th><th>माता</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th></tr></thead>
-          <tbody>${students.map((s,i)=>`<tr>
+          <thead><tr><th>#</th><th>नाम</th><th>पिता</th><th>माता</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th><th>स्थिति</th></tr></thead>
+          <tbody>${students.map((s,i)=>`<tr style="${s.is_active===false?'opacity:.55;':''}">
             <td>${i+1}</td>
             <td><b>${s.salutation} ${s.name}</b></td>
             <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
@@ -748,6 +748,7 @@ async function showAdmin(){
             <td>${s.gotra||'-'}</td>
             <td>${s.blood_group||'-'}</td>
             <td>${s.email||'-'}</td>
+            <td>${stuStatusBtn(s)}</td>
           </tr>`).join('')}</tbody>
         </table></div>`}
       </div>
@@ -1033,9 +1034,9 @@ async function computeAttendanceRanking(my){
     if(a!=null&&d!=null){mins=Math.max(0,Math.min(dur,d-a));}
     minutesByStu[r.student_id]=(minutesByStu[r.student_id]||0)+mins;
   });
-  const students=await dbGet('students?select=id,name,salutation');
+  const students=await dbGet('students?select=id,name,salutation,is_active');
   const infoById={};(students||[]).forEach(s=>infoById[s.id]=s);
-  return Object.entries(minutesByStu).map(([sid,mins])=>({
+  return Object.entries(minutesByStu).filter(([sid])=>infoById[sid]?.is_active!==false).map(([sid,mins])=>({
     id:sid,name:infoById[sid]?.name||'',salutation:infoById[sid]?.salutation||'',
     mins,ratio:mins/totalMinutes
   })).sort((a,b)=>b.ratio-a.ratio);
@@ -1054,7 +1055,7 @@ async function computePerformanceRanking(my){
   const ids=Object.keys(pm);
   const infoById={};let ageDaysById={};
   if(ids.length){
-    const studentsInfo=await dbGet('students?id=in.('+ids.join(',')+')&select=id,name,salutation,dob');
+    const studentsInfo=await dbGet('students?id=in.('+ids.join(',')+')&select=id,name,salutation,dob,is_active');
     const todayD=new Date();
     (studentsInfo||[]).forEach(s=>{
       infoById[s.id]=s;
@@ -1079,7 +1080,7 @@ async function computePerformanceRanking(my){
       id,name:infoById[id]?.name||'',salutation:infoById[id]?.salutation||'',
       avgRating,ratingCount:rs.length,score:baseScore*(1+ageBonus)
     };
-  }).sort((a,b)=>b.score-a.score);
+  }).filter(r=>infoById[r.id]?.is_active!==false).sort((a,b)=>b.score-a.score);
 }
 
 // ── ADMIN: interactive manual award selection (auto-suggested, editable) ──
@@ -1271,7 +1272,7 @@ async function loadRsContent(cdId,date){
       dbGet('attendance?class_date_id=eq.'+cdId),
       dbGet('performance?class_date_id=eq.'+cdId)
     ]);
-    const stus=(stusAll||[]).filter(s=>!s.joining_date||s.joining_date<=date);
+    const stus=(stusAll||[]).filter(s=>s.is_active!==false&&(!s.joining_date||s.joining_date<=date));
     const am={},pm={};
     (atts||[]).forEach(r=>am[r.student_id]=r);
     (perfs||[]).forEach(r=>pm[r.student_id]=r);
@@ -1486,7 +1487,7 @@ async function showTeacher(){
         ${!window._stus.length?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
           <thead><tr><th>#</th><th>नाम</th><th>पिता (📱)</th><th>माता (📱)</th><th>जन्म तिथि</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th><th>प्रवेश तिथि</th><th>कार्य</th></tr></thead>
-          <tbody>${window._stus.map((s,i)=>`<tr>
+          <tbody>${window._stus.map((s,i)=>`<tr style="${s.is_active===false?'opacity:.55;':''}">
             <td>${i+1}</td>
             <td><b>${s.salutation} ${s.name}</b></td>
             <td>${s.father_name||'-'}${s.father_phone?' ('+s.father_phone+')':''}</td>
@@ -1499,6 +1500,7 @@ async function showTeacher(){
             <td>${s.joining_date?fmtDate(s.joining_date):'-'}</td>
             <td><div class="flex gap-2">
               <button class="btn btn-sky btn-sm" onclick='mEditStudent(${JSON.stringify(s)})'>✏️</button>
+              ${stuStatusBtn(s)}
               <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">🗑️</button>
             </div></td>
           </tr>`).join('')}</tbody>
@@ -1630,7 +1632,7 @@ function tryOpenMergedSheet(cdId,date){
 
 async function loadMergedSheet(cdId,date){
   const el=document.getElementById('mergedSheetDiv');if(!el)return;
-  const stu=(window._stus||[]).filter(s=>!s.joining_date||s.joining_date<=date);
+  const stu=(window._stus||[]).filter(s=>s.is_active!==false&&(!s.joining_date||s.joining_date<=date));
   if(!stu.length){el.innerHTML='<div class="empty"><p>इस दिनांक तक कोई विद्यार्थी प्रवेशित नहीं।</p></div>';return;}
   el.innerHTML='<div class="spinner"></div>';
   const my=date.substring(0,7);
@@ -1927,6 +1929,29 @@ async function doEditStudent(id){
     });
     closeModal();showTeacher();
   }catch(e){merr('eserr','Error: '+e.message);}
+}
+
+// ── Student Active / Inactive (data is kept; inactive students are hidden from attendance, rankings, WhatsApp lists) ──
+function stuStatusBtn(s){
+  const n=encodeURIComponent(s.name||'');
+  return s.is_active===false
+    ? `<span class="wa-badge" style="background:#fee2e2;color:#991b1b;">Inactive</span> <button class="btn btn-green btn-sm" onclick="setStudentActive('${s.id}','${n}',true)">▶ Activate</button>`
+    : `<button class="btn btn-ghost btn-sm" onclick="setStudentActive('${s.id}','${n}',false)">⏸ Inactive करें</button>`;
+}
+async function setStudentActive(id,encName,val,quiet){
+  const name=decodeURIComponent(encName||'');
+  if(!val&&!confirm(`"${name}" को Inactive करें?\n\nअब यह विद्यार्थी उपस्थिति सूची, रैंकिंग और WhatsApp सूची में नहीं दिखेगा। पुराना रिकॉर्ड सुरक्षित रहेगा, और कभी भी Activate कर सकते हैं।`))return false;
+  try{await dbPatch('students?id=eq.'+id,{is_active:val});}
+  catch(e){toast('Error: '+e.message);return false;}
+  toast(val?'✅ '+name+' Active':'⏸ '+name+' Inactive');
+  if(quiet)return true;
+  if(ME&&ME.role==='admin'){await showAdmin();atab('s');}else{await showTeacher();}
+  return true;
+}
+async function waDeactivate(id,encName){
+  if(!await setStudentActive(id,encName,false,true))return;
+  _waRows=_waRows.filter(r=>r.s.id!==id);
+  waBuildRecipients();waRenderList();
 }
 
 async function delStudent(id,name){
@@ -2364,7 +2389,7 @@ async function waLoadList(){
     const [dates,att,students]=await Promise.all([
       dbGet('class_dates?month_year=in.('+inList+')&select=id,class_date,is_active&order=class_date'),
       waFetchAll('attendance?month_year=in.('+inList+')&select=student_id,class_date_id,status&order=id'),
-      dbGet('students?select=id,salutation,name,class,father_name,father_phone,mother_name,mother_phone,joining_date&order=name')
+      dbGet('students?select=id,salutation,name,class,father_name,father_phone,mother_name,mother_phone,joining_date,is_active&order=name')
     ]);
     // Count only classes that were held (active, not in the future) AND for which attendance was actually taken
     const marked=new Set((att||[]).map(r=>r.class_date_id));
@@ -2373,7 +2398,7 @@ async function waLoadList(){
     (att||[]).forEach(r=>{if(r.status==='present'){(presentBy[r.student_id]=presentBy[r.student_id]||new Set()).add(r.class_date_id);}});
     const mode=g('waMode'),n=Math.max(1,parseInt(g('waN'))||2);
     const rows=[];
-    (students||[]).forEach(s=>{
+    (students||[]).filter(s=>s.is_active!==false).forEach(s=>{
       // A student is only expected in classes on/after their joining date
       const elig=held.filter(d=>!s.joining_date||d.class_date>=s.joining_date);
       const total=elig.length;if(!total)return;
@@ -2465,7 +2490,7 @@ function waRenderList(){
         return `<tr class="${done?'wa-sent':''}">
           <td>${i+1}</td>
           <td><b>${r.name||'अभिभावक'}</b><div style="font-size:11px;color:#64748b;">${roleTxt[r.role]} · 📱 ${r.num.slice(2)}</div></td>
-          <td>${r.kids.map(k=>`<div style="margin-bottom:3px;">${waNm(k.s)} <span class="wa-badge">${k.missed}/${k.total}</span></div>`).join('')}</td>
+          <td>${r.kids.map(k=>`<div style="margin-bottom:3px;">${waNm(k.s)} <span class="wa-badge">${k.missed}/${k.total}</span> <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" onclick="waDeactivate('${k.s.id}','${encodeURIComponent(k.s.name||'')}')">⏸ Inactive</button></div>`).join('')}</td>
           <td><button class="btn ${done?'btn-ghost':'btn-green'} btn-sm" onclick="waSendRecip(${i})">${done?'✓ भेजा (फिर से?)':'📲 WhatsApp'}</button></td>
         </tr>`;}).join('')}</tbody>
     </table></div>${noPhone}`;
