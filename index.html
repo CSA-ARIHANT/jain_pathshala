@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>जैन पाठशाला</title>
+<meta name="theme-color" content="#1c6fb8">
+<script>try{if(localStorage.getItem('jpDark')==='1')document.documentElement.classList.add('dark');}catch(e){}</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -144,58 +146,319 @@ select option{background:#fff;}
 .confirm-box p{color:#92400e;font-size:14px;line-height:1.6;}
 @media(max-width:600px){.app-main{padding:14px 10px;}.form-row{grid-template-columns:1fr;}.lcard{padding:18px 12px;}}
 
-/* ═══ APPLE GLASS THEME (cream glass + golden border) ═══ */
-:root{--glass:linear-gradient(145deg,rgba(255,253,245,.88),rgba(255,247,225,.66));--gb:#d4a017;--ink:#1f1a0e;--ink2:#4b4636;}
-body{color:var(--ink);background:
-  radial-gradient(circle at 10% 8%,rgba(252,211,77,.40) 0,transparent 38%),
-  radial-gradient(circle at 92% 14%,rgba(56,189,248,.38) 0,transparent 42%),
-  radial-gradient(circle at 55% 100%,rgba(251,207,232,.45) 0,transparent 48%),
-  linear-gradient(160deg,#e0f2fe,#fff8e7 55%,#bae6fd);background-attachment:fixed;}
-.app-header,.app-footer{background:linear-gradient(145deg,rgba(255,253,245,.82),rgba(255,244,214,.68))!important;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);color:#0c3558!important;}
-.app-header{border-bottom:2px solid var(--gb)!important;box-shadow:0 8px 28px rgba(160,110,10,.18);}
-.app-footer{border-top:2px solid var(--gb)!important;}
-.title-group h1{color:#0c3558!important;}
-.title-group p,#liveClock,#liveOnlineDiv{color:#3d3520!important;}
-.logo{border-color:#fff;box-shadow:0 0 0 2px var(--gb),0 4px 10px rgba(160,110,10,.3);}
-.card,.modal,.lcard,.award-card,.stat-card,.confirm-box{
-  background:var(--glass)!important;border:1.5px solid var(--gb)!important;
-  backdrop-filter:blur(18px) saturate(170%);-webkit-backdrop-filter:blur(18px) saturate(170%);
-  box-shadow:0 10px 34px rgba(120,80,10,.16),inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.5)!important;color:var(--ink);}
-.lcard{transition:transform .2s;}
-.lcard:hover{transform:translateY(-4px);}
-.lcard:active{transform:translateY(0);}
-.lcard h3,.card-title,.modal h3,.section-title{color:#0c3558!important;}
-.lcard p{color:var(--ink2)!important;}
-.sc-val{color:#0c3558!important;}
+/* ═══ WATER GLASS THEME (v16) — blue water background, frosted glass, glossy tiles ═══ */
+:root{
+  --sky:#dff0ff;--sky-mid:#a9d4f5;--sky-dark:#0b63b5;--sky-deeper:#0a3d73;
+  --navy:#06203f;--navy-mid:#173a63;--gold:#f5a524;--gold-light:#ffd36b;
+  --ink:#0a2a4d;--ink2:#38566f;--gb:#8cc4ee;
+  --glass:linear-gradient(145deg,rgba(255,255,255,.86),rgba(232,245,255,.68));
+  --edge:rgba(255,255,255,.85);
+  --shadow:0 10px 30px rgba(7,60,120,.20);
+  --field:rgba(255,255,255,.88);--field-bd:#9ccbf0;
+  --th:rgba(190,224,250,.8);--row-bd:rgba(80,150,210,.28);--hover:rgba(120,190,245,.25);
+  --tbl:rgba(255,255,255,.4);
+  --blue-glass:linear-gradient(160deg,rgba(24,92,165,.88),rgba(11,56,112,.9));
+}
+html.dark{
+  --sky-deeper:#cfe6ff;--navy-mid:#d4e6fa;--sky-dark:#7cc0ff;
+  --ink:#e9f3ff;--ink2:#a7c2dc;--gb:#3d78b4;
+  --glass:linear-gradient(145deg,rgba(17,44,80,.88),rgba(9,28,56,.82));
+  --edge:rgba(120,180,240,.32);--shadow:0 10px 30px rgba(0,0,0,.4);
+  --field:rgba(7,24,48,.72);--field-bd:#2f6aa6;
+  --th:rgba(30,72,122,.85);--row-bd:rgba(100,160,220,.22);--hover:rgba(80,150,220,.22);
+  --tbl:rgba(8,24,50,.35);
+  --blue-glass:linear-gradient(160deg,rgba(18,62,118,.92),rgba(8,32,70,.94));
+}
+body{color:var(--ink);position:relative;
+  font-family:'Segoe UI','Noto Sans Devanagari',system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 45% at 15% -5%,rgba(255,255,255,.9),transparent 60%),
+    radial-gradient(ellipse 70% 40% at 90% 5%,rgba(200,235,255,.85),transparent 60%),
+    radial-gradient(ellipse 140% 35% at 50% 110%,rgba(6,66,140,.6),transparent 70%),
+    linear-gradient(180deg,#d4ecff 0%,#86c2ee 42%,#3a8fd6 100%);
+  background-attachment:fixed;}
+html.dark body{background:
+    radial-gradient(ellipse 80% 40% at 15% -5%,rgba(60,130,210,.35),transparent 60%),
+    radial-gradient(ellipse 140% 35% at 50% 110%,rgba(10,90,170,.45),transparent 70%),
+    linear-gradient(180deg,#0a2a52 0%,#07203f 50%,#041428 100%);background-attachment:fixed;}
+/* water droplets + ripples */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 6% 66%,rgba(255,255,255,.55) 0 3px,transparent 4px),
+    radial-gradient(circle at 12% 80%,rgba(255,255,255,.4) 0 5px,transparent 6px),
+    radial-gradient(circle at 90% 60%,rgba(255,255,255,.5) 0 4px,transparent 5px),
+    radial-gradient(circle at 95% 84%,rgba(255,255,255,.4) 0 6px,transparent 7px),
+    radial-gradient(circle at 48% 94%,rgba(255,255,255,.35) 0 4px,transparent 5px),
+    radial-gradient(ellipse 45% 5% at 50% 101%,transparent 62%,rgba(255,255,255,.28) 64%,transparent 67%),
+    radial-gradient(ellipse 65% 8% at 50% 103%,transparent 62%,rgba(255,255,255,.22) 64%,transparent 67%);}
+.app-header,.app-main,.app-footer{position:relative;z-index:1;}
+
+/* ── header / footer ── */
+.app-header,.app-footer{background:var(--glass)!important;backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);color:var(--ink)!important;}
+.app-header{border-bottom:1px solid var(--edge)!important;box-shadow:var(--shadow);}
+.app-footer{border-top:1px solid var(--edge)!important;font-weight:500;line-height:1.6;}
+.logo{background:linear-gradient(160deg,#6cc8ff,#0b63b5);border:2px solid #fff;box-shadow:0 4px 12px rgba(11,99,181,.4);}
+.logo svg{width:62%;height:62%;}
+.title-group h1{color:var(--sky-deeper)!important;}
+.title-group p,#liveClock,#liveOnlineDiv{color:var(--ink2)!important;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.hdr-stats{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;line-height:1.3;color:var(--ink);white-space:nowrap;}
+.hdr-stats b{color:var(--sky-deeper);}
+@media(max-width:480px){.hdr-stats{font-size:10px;}}
+.app-footer a{color:var(--sky-deeper);font-weight:700;text-decoration:underline;text-underline-offset:3px;}
+body.mode-shell .app-header,body.mode-landing .app-header{display:none;}
+body.mode-landing .app-main{max-width:none;padding:0;}
+body.mode-shell .app-main{max-width:1560px;padding:18px;}
+
+/* ── pills (language / dark mode / counters) ── */
+.pill-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:14px;border:1px solid var(--edge);background:var(--glass);color:var(--sky-deeper);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(7,60,120,.15);backdrop-filter:blur(12px);}
+.pill-btn svg{width:18px;height:18px;}
+.pill-btn:hover{filter:brightness(1.05);}
+.mini{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:14px;border:1px solid var(--edge);background:var(--glass);font-size:13px;color:var(--ink);}
+.mini b{color:var(--sky-deeper);}
+.js-pills{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;}
+@media(max-width:480px){.pill-btn{padding:7px 10px;}.pill-btn .pt{display:none;}}
+
+/* ── generic surfaces ── */
+.card,.modal,.award-card,.stat-card,.confirm-box{
+  background:var(--glass)!important;border:1px solid var(--edge)!important;border-radius:18px;
+  backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.7)!important;color:var(--ink);}
+.modal-bg{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(4,24,52,.55);}
+.card-title,.modal h3,.section-title{color:var(--sky-deeper)!important;}
+.sc-val{color:var(--sky-deeper)!important;}
 .sc-label{color:var(--ink2)!important;}
-.award-card h4{color:#0c3558!important;}
-.award-card p{color:#1f1a0e!important;}
-.confirm-box p{color:#0c3558;}
-.modal-bg{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(60,40,10,.45);}
-.tab,.chip,.pin-key{background:linear-gradient(145deg,rgba(255,253,245,.9),rgba(255,244,214,.7))!important;border:1.5px solid var(--gb)!important;color:#0c3558!important;backdrop-filter:blur(10px);box-shadow:0 4px 0 #e6c15a,0 6px 10px rgba(160,110,10,.12)!important;}
-.tab.active{background:linear-gradient(160deg,#fcd34d,#f59e0b)!important;color:#3b2a0a!important;box-shadow:0 2px 0 #b45309!important;}
-.chip[style*="background"]{background:rgba(255,251,235,.85)!important;}
-input,select{background:rgba(255,255,255,.75)!important;border:1.5px solid #e0b640!important;color:var(--ink)!important;}
-input:focus,select:focus{border-color:var(--gb)!important;box-shadow:0 0 0 3px rgba(212,160,23,.25)!important;}
-.form-group label{color:#4b4636;}
-table{border-color:rgba(212,160,23,.35);background:rgba(255,255,255,.35);}
-th{background:rgba(254,243,199,.8)!important;color:#0c3558!important;border-bottom:2px solid var(--gb)!important;border-right-color:rgba(212,160,23,.3)!important;}
-td{color:var(--ink)!important;border-color:rgba(212,160,23,.25)!important;}
-tr:hover td{background:rgba(252,211,77,.28)!important;}
-.alert{backdrop-filter:blur(8px);}
+.award-card h4{color:var(--sky-deeper)!important;}
+.award-card p{color:var(--ink)!important;}
+.confirm-box p{color:var(--sky-deeper);}
+.back-btn{color:var(--sky-deeper);}
+.form-group label{color:var(--ink2);}
 .empty,.empty p{color:var(--ink2);}
 p[style*="color:#64748b"],div[style*="color:#64748b"],span[style*="color:#64748b"]{color:var(--ink2)!important;}
-[style*="background:#f0f9ff"]{background:rgba(255,251,235,.85)!important;border-color:var(--gb)!important;}
-.back-btn{color:#0c3558;}
+[style*="background:#f0f9ff"]{background:var(--field)!important;border-color:var(--field-bd)!important;}
+#dailyQuoteDiv p,[style*="color:#92400e"]{color:var(--ink)!important;}
+html.dark .confirm-box p[style]{color:#f5d0fe!important;}
+.panel-glass{background:var(--glass);border:1px solid var(--edge);border-radius:22px;padding:18px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+.panel-glass .card{background:var(--field)!important;box-shadow:none!important;backdrop-filter:none;}
+@media(max-width:480px){.panel-glass{padding:12px;border-radius:18px;}}
 
-.title-group h1{color:#0c3558!important;}
-#dailyQuoteDiv p,[style*="color:#92400e"]{color:#1f1a0e!important;}
-.app-footer a{color:#0c3558;font-weight:700;text-decoration:underline;text-underline-offset:3px;}
-.app-footer a:hover{color:#075985;}
-.header-right{display:flex;align-items:center;gap:10px;}
-.hdr-stats{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:12px;line-height:1.3;color:#1f1a0e;white-space:nowrap;}
-.hdr-stats b{color:#0c3558;}
-@media(max-width:480px){.hdr-stats{font-size:10px;}}
+/* ── buttons (glossy, pressable) ── */
+.btn{border-radius:12px;}
+.btn-gold{background:linear-gradient(180deg,#4aa8f5,#0b63b5);color:#fff;box-shadow:0 5px 0 #084a8a,0 8px 14px rgba(8,74,138,.3);}
+.btn-gold:hover{top:2px;box-shadow:0 3px 0 #084a8a,0 5px 8px rgba(8,74,138,.25);}
+.btn-gold:active{top:5px;box-shadow:0 0 0 #084a8a;}
+.btn-sky{background:linear-gradient(180deg,#34d0c6,#0f8f94);color:#fff;box-shadow:0 5px 0 #0a6a70,0 8px 14px rgba(10,106,112,.3);}
+.btn-sky:hover{top:2px;box-shadow:0 3px 0 #0a6a70;}
+.btn-sky:active{top:5px;box-shadow:0 0 0 #0a6a70;}
+.btn-ghost{background:var(--field);color:var(--sky-deeper);border:1.5px solid var(--field-bd);box-shadow:0 4px 0 var(--field-bd);}
+.btn-ghost:hover{top:2px;box-shadow:0 2px 0 var(--field-bd);}
+.btn-ghost:active{top:4px;box-shadow:0 0 0 var(--field-bd);}
+.btn-logout{background:linear-gradient(180deg,#ff8f80,#e0453a);color:#fff;border-radius:10px;box-shadow:0 4px 0 #a82d25;}
+.btn-logout:hover{top:2px;box-shadow:0 2px 0 #a82d25;}
+.tab,.chip,.pin-key{background:var(--field)!important;border:1.5px solid var(--field-bd)!important;color:var(--sky-deeper)!important;box-shadow:0 4px 0 var(--field-bd)!important;}
+.tab.active{background:linear-gradient(180deg,#4aa8f5,#0b63b5)!important;color:#fff!important;border-color:#0b63b5!important;box-shadow:0 2px 0 #084a8a!important;}
+.chip[style*="background"]{background:var(--field)!important;}
+.pin-dot{border-color:var(--sky-dark);}
+.pin-dot.filled{background:var(--sky-dark);}
+.locked-tag{background:rgba(245,165,36,.18);}
+
+/* ── forms / tables ── */
+input,select,textarea{background:var(--field)!important;border:1.5px solid var(--field-bd)!important;color:var(--ink)!important;border-radius:10px;}
+input:focus,select:focus,textarea:focus{border-color:var(--sky-dark)!important;box-shadow:0 0 0 3px rgba(11,99,181,.22)!important;outline:none;}
+input::placeholder,textarea::placeholder{color:var(--ink2);opacity:.75;}
+select option{background:#fff;color:#0a2a4d;}
+html.dark select option{background:#0b2547;color:#e9f3ff;}
+table{border-color:var(--row-bd);background:var(--tbl);border-radius:10px;}
+th{background:var(--th)!important;color:var(--sky-deeper)!important;border-bottom:2px solid var(--field-bd)!important;border-right-color:var(--row-bd)!important;}
+td{color:var(--ink)!important;border-color:var(--row-bd)!important;}
+tr:hover td{background:var(--hover)!important;}
+.alert{backdrop-filter:blur(8px);}
+.spinner{border-color:rgba(255,255,255,.55);border-top-color:var(--sky-dark);}
+
+/* ── landing (login) page ── */
+.lp{display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr) minmax(260px,320px);min-height:calc(100vh - 70px);position:relative;overflow:hidden;}
+.lp-temple{position:fixed;right:0;bottom:0;width:min(48vw,620px);opacity:.30;pointer-events:none;z-index:0;}
+html.dark .lp-temple{opacity:.18;}
+.lp-temple svg{width:100%;height:auto;display:block;}
+.lp-brand{position:relative;z-index:1;background:linear-gradient(180deg,rgba(9,48,104,.94),rgba(16,88,156,.82));color:#fff;border-right:1px solid rgba(255,255,255,.28);}
+.lp-brand-in{position:sticky;top:0;min-height:calc(100vh - 70px);padding:28px 22px 18px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;}
+.lp-emblem{width:170px;max-width:70%;height:auto;display:block;}
+.lp-emblem svg{width:100%;height:auto;display:block;}
+.lp-text h2{font-size:26px;font-weight:800;line-height:1.3;margin-bottom:6px;}
+.lp-reg{color:#ffe08a;font-size:13px;}
+.lp-div{width:84%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);}
+.lp-addr{display:flex;gap:10px;text-align:left;font-size:14px;line-height:1.6;align-items:flex-start;}
+.lp-addr svg{width:22px;height:22px;flex-shrink:0;color:#8fd0ff;margin-top:2px;}
+.lp-lotus{margin-top:auto;width:100%;max-width:270px;}
+.lp-lotus svg{width:100%;height:auto;display:block;}
+.lp-center{position:relative;z-index:1;padding:20px 18px 30px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.lp-top{align-self:stretch;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;align-items:center;}
+.lp-card{width:100%;max-width:560px;border-radius:30px!important;padding:26px 22px 18px;text-align:center;}
+.lp-drop .drop{width:58px;height:68px;filter:drop-shadow(0 6px 10px rgba(11,99,181,.35));}
+.lp-h1{font-size:46px;font-weight:800;color:var(--sky-deeper);line-height:1.15;margin-top:4px;}
+.lp-h2{font-size:26px;font-weight:700;color:var(--sky-deeper);margin-top:2px;}
+.lp-orn{display:flex;align-items:center;gap:10px;justify-content:center;margin:10px auto 6px;max-width:300px;color:var(--sky-dark);}
+.lp-orn span{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--sky-dark));}
+.lp-orn span:last-child{background:linear-gradient(270deg,transparent,var(--sky-dark));}
+.lp-orn svg{width:26px;height:26px;}
+.lp-tag{font-size:19px;font-weight:700;color:var(--sky-dark);margin-bottom:16px;}
+.lp-login{background:rgba(255,255,255,.45);border:1px solid var(--edge);border-radius:22px;padding:16px 14px 16px;text-align:left;}
+html.dark .lp-login{background:rgba(255,255,255,.05);}
+.lp-lh{display:flex;gap:12px;align-items:center;margin-bottom:14px;color:var(--sky-dark);}
+.lp-lh svg{width:34px;height:34px;flex-shrink:0;}
+.lp-lh b{display:block;font-size:21px;color:var(--sky-deeper);}
+.lp-lh small{font-size:13.5px;color:var(--ink2);}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.role{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px 12px;border-radius:16px;background:var(--field);border:1.5px solid var(--field-bd);box-shadow:0 6px 0 var(--field-bd),0 10px 16px rgba(7,60,120,.12);cursor:pointer;font-family:inherit;color:var(--ink);position:relative;top:0;transition:top .12s,box-shadow .12s;}
+.role:hover{top:3px;box-shadow:0 3px 0 var(--field-bd);}
+.role:active{top:6px;box-shadow:0 0 0 var(--field-bd);}
+.role .ri{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:#fff;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 4px 10px rgba(0,0,0,.2);}
+.role .ri svg{width:26px;height:26px;}
+.role b{font-size:16px;color:var(--sky-deeper);}
+.role small{font-size:12px;color:var(--ink2);}
+.r-admin .ri{background:linear-gradient(160deg,#4aa8f5,#0b63b5);}
+.r-teacher .ri{background:linear-gradient(160deg,#3ecf7e,#14874a);}
+.r-parent .ri{background:linear-gradient(160deg,#9b83f5,#5a3fcf);}
+.lp-sec{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;font-size:14px;color:var(--sky-deeper);font-weight:600;}
+.lp-sec svg{width:20px;height:20px;color:var(--sky-dark);}
+.lp-public{width:100%;max-width:560px;}
+.lp-feat{position:relative;z-index:1;padding:74px 18px 24px;display:flex;flex-direction:column;gap:14px;}
+.fcard{display:flex;gap:13px;align-items:flex-start;padding:15px;border-radius:18px!important;text-align:left;color:var(--ink);text-decoration:none;}
+.fcard .fi{width:46px;height:46px;border-radius:13px;background:linear-gradient(160deg,#4aa8f5,#0b63b5);color:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:inset 0 2px 0 rgba(255,255,255,.4);}
+.fcard .fi svg{width:26px;height:26px;}
+.fcard b{display:block;font-size:16.5px;color:var(--sky-deeper);margin-bottom:3px;}
+.fcard span{font-size:13.5px;color:var(--ink2);line-height:1.5;}
+@media(max-width:1100px){
+  .lp{grid-template-columns:minmax(240px,300px) minmax(0,1fr);}
+  .lp-feat{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;padding:0 18px 26px;}
+  .lp-feat .fcard{flex:1 1 250px;}
+}
+@media(max-width:760px){
+  .lp{grid-template-columns:1fr;}
+  .lp-temple,.lp-lotus,.lp-div,.lp-addr{display:none;}
+  .lp-brand{border-right:none;border-bottom:1px solid rgba(255,255,255,.28);}
+  .lp-brand-in{position:static;min-height:0;flex-direction:row;justify-content:center;align-items:center;padding:14px 16px;gap:14px;}
+  .lp-emblem{width:84px;max-width:none;}
+  .lp-text{text-align:left;}
+  .lp-text h2{font-size:21px;margin-bottom:3px;}
+  .lp-reg{font-size:11.5px;}
+  .lp-h1{font-size:36px;}.lp-h2{font-size:21px;}.lp-tag{font-size:16px;margin-bottom:12px;}
+  .lp-card{padding:20px 14px 14px;border-radius:24px!important;}
+  .lp-center{padding:14px 12px 22px;}
+  .role b{font-size:14px;}.role small{font-size:11px;}.role .ri{width:42px;height:42px;}
+  .lp-feat{padding:0 12px 22px;}
+}
+
+/* ── logged-in shell: sidebar + content ── */
+.shell{display:grid;grid-template-columns:262px minmax(0,1fr);gap:20px;align-items:start;}
+.sb{position:sticky;top:18px;height:calc(100vh - 36px);display:flex;flex-direction:column;padding:16px 14px;border-radius:26px;background:var(--blue-glass);color:#fff;border:1px solid rgba(160,210,255,.45);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.35);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow:hidden;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:6px 8px 14px;}
+.sb-logo .drop{width:42px;height:50px;flex-shrink:0;}
+.sb-logo b{display:block;font-size:23px;line-height:1.1;}
+.sb-logo span{font-size:14px;opacity:.9;}
+html[lang="en"] .sb-logo b{letter-spacing:1px;}
+html[lang="en"] .sb-logo span{letter-spacing:2px;}
+.sb-nav{display:flex;flex-direction:column;gap:9px;overflow-y:auto;flex:1;padding:2px 2px 8px;scrollbar-width:thin;}
+.sb-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:14px;border:1px solid rgba(150,200,250,.28);background:linear-gradient(180deg,rgba(40,110,185,.55),rgba(14,58,112,.6));color:#eaf5ff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.18);transition:transform .12s,background .12s;}
+.sb-item svg{width:22px;height:22px;flex-shrink:0;}
+.sb-item:hover{transform:translateX(3px);}
+.sb-item.active{background:linear-gradient(180deg,#46a8f7,#1670c9);border-color:rgba(255,255,255,.7);box-shadow:0 4px 14px rgba(40,140,240,.5),inset 0 1px 0 rgba(255,255,255,.5);}
+.sb-month{margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(10,45,95,.6);border:1px solid rgba(150,200,250,.28);}
+.sb-month small{display:block;font-size:12px;opacity:.8;}
+.sb-month b{font-size:19px;}
+.sb-month .cal{width:38px;height:38px;border-radius:9px;background:linear-gradient(180deg,#5cc3ff,#1670c9);display:grid;place-items:center;}
+.sb-month .cal svg{width:22px;height:22px;}
+.sh-main{min-width:0;}
+.welcome{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.welcome h2{font-size:30px;font-weight:800;color:var(--sky-deeper);line-height:1.2;}
+.welcome p{color:var(--ink2);font-size:16px;margin-top:3px;}
+.w-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.w-date{text-align:right;font-size:14px;line-height:1.45;color:var(--ink);}
+.w-user{display:flex;align-items:center;gap:10px;padding:5px 14px 5px 5px;border-radius:30px;background:var(--glass);border:1px solid var(--edge);box-shadow:var(--shadow);}
+.w-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(180deg,#5cc3ff,#0b63b5);color:#fff;display:grid;place-items:center;}
+.w-avatar svg{width:24px;height:24px;}
+.w-user b{display:block;font-size:15px;color:var(--sky-deeper);line-height:1.2;}
+.w-user small{font-size:12.5px;color:var(--ink2);}
+.w-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;gap:12px;}
+  .sb{position:static;height:auto;padding:10px;border-radius:20px;}
+  .sb-logo{padding:2px 6px 8px;}
+  .sb-logo .drop{width:32px;height:38px;}
+  .sb-logo b{font-size:18px;}.sb-logo span{font-size:12px;}
+  .sb-nav{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;flex:none;padding-bottom:6px;}
+  .sb-item{width:auto;white-space:nowrap;padding:9px 13px;font-size:13.5px;flex-shrink:0;}
+  .sb-item svg{width:19px;height:19px;}
+  .sb-item:hover{transform:none;}
+  .sb-month{display:none;}
+  body.mode-shell .app-main{padding:10px;}
+  .welcome h2{font-size:23px;}.welcome p{font-size:14px;}
+  .w-date{text-align:left;}
+}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:18px;}
+.tile{display:flex;gap:14px;align-items:center;padding:18px;border-radius:20px;color:#fff;border:1px solid rgba(255,255,255,.55);position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(5,50,110,.3),inset 0 2px 0 rgba(255,255,255,.45),inset 0 -8px 16px rgba(0,0,0,.12);}
+.tile::after{content:"";position:absolute;top:-30%;left:-10%;width:70%;height:90%;background:radial-gradient(ellipse,rgba(255,255,255,.26),transparent 70%);pointer-events:none;}
+.tile .ti{width:54px;height:54px;flex-shrink:0;}
+.tile small{display:block;font-size:15px;opacity:.95;}
+.tile b{display:block;font-size:40px;line-height:1.1;font-weight:800;}
+.tile em{font-style:normal;font-size:14px;color:#caffd8;display:block;}
+.t-blue{background:linear-gradient(160deg,#2f8cf0,#0f4fa8);}
+.t-teal{background:linear-gradient(160deg,#27b59a,#0c7a6a);}
+.t-purple{background:linear-gradient(160deg,#7e6cf0,#4a37b5);}
+.t-orange{background:linear-gradient(160deg,#f0a23a,#c2680d);}
+@media(max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:600px){.rt{min-width:0;}.rt .c-gender{display:none;}.av{width:28px;height:28px;margin-right:6px;font-size:12px;}.rt th,.rt td{padding:8px 6px;}}
+@media(max-width:480px){.tiles{gap:10px;}.tile{padding:12px;gap:8px;border-radius:16px;}.tile .ti{width:32px;height:32px;}.tile b{font-size:27px;}.tile small{font-size:12px;}.tile em{font-size:11px;}}
+
+/* blue glass panels: recent students + calendar */
+.dash-grid{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:16px;margin-bottom:18px;}
+@media(max-width:1100px){.dash-grid{grid-template-columns:1fr;}}
+.gp{background:var(--blue-glass);color:#fff;border:1px solid rgba(160,210,255,.45);border-radius:22px;padding:18px;box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.3);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);min-width:0;}
+.gp-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
+.gp-h h3{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;}
+.gp-h h3 svg{width:24px;height:24px;}
+.btn-glass{padding:6px 16px;border-radius:10px;border:1px solid rgba(190,225,255,.6);background:rgba(60,140,220,.5);color:#fff;cursor:pointer;font-weight:600;font-size:13px;font-family:inherit;}
+.rt-wrap{overflow-x:auto;}
+.rt{width:100%;border-collapse:separate;border-spacing:0;border:none;background:transparent;font-size:14px;min-width:460px;}
+.rt th{background:rgba(8,40,88,.65)!important;color:#e6f2ff!important;border:none!important;padding:10px;font-size:13.5px;text-align:left;}
+.rt th:first-child{border-radius:10px 0 0 10px;}.rt th:last-child{border-radius:0 10px 10px 0;}
+.rt td{color:#f1f8ff!important;border:none!important;border-bottom:1px solid rgba(160,210,255,.22)!important;padding:9px 10px;}
+.rt tr:last-child td{border-bottom:none!important;}
+.rt tr:hover td{background:rgba(255,255,255,.08)!important;}
+.av{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:14px;color:#fff;margin-right:10px;vertical-align:middle;border:2px solid rgba(255,255,255,.7);}
+.pill{display:inline-block;padding:3px 14px;border-radius:14px;font-size:12.5px;font-weight:700;color:#fff;}
+.pill-ok{background:linear-gradient(180deg,#2fd07a,#14a65a);}
+.pill-off{background:linear-gradient(180deg,#f27a7a,#d33f3f);}
+.cal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.cal-h b{font-size:21px;}
+.cal-nav{width:34px;height:34px;border-radius:9px;border:1px solid rgba(190,225,255,.5);background:rgba(60,140,220,.45);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;}
+.cal-nav svg{width:18px;height:18px;}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 0;text-align:center;}
+.cal-g .wd{font-size:13px;font-weight:600;padding:6px 0;}
+.cal-g .d{height:38px;display:grid;place-items:center;font-size:15px;position:relative;}
+.cal-g .d.o{opacity:.4;}
+.cal-g .d.today span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#52b4ff,#1670c9);box-shadow:0 0 0 2px rgba(255,255,255,.75),0 4px 10px rgba(0,0,0,.3);font-weight:700;}
+.cal-g .d.cls::after{content:"";position:absolute;bottom:1px;width:6px;height:6px;border-radius:50%;background:#ffd36b;}
+.cal-foot{display:flex;justify-content:space-between;margin-top:10px;font-size:13.5px;opacity:.92;flex-wrap:wrap;gap:6px;}
+.cal-foot i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffd36b;margin-right:6px;}
+
+/* quick actions */
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+.qa{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:22px;color:#fff;border:1px solid rgba(255,255,255,.6);cursor:pointer;text-align:left;font-family:inherit;position:relative;top:0;transition:top .12s,box-shadow .12s;box-shadow:0 8px 0 rgba(0,0,0,.22),0 14px 22px rgba(5,50,110,.3),inset 0 2px 0 rgba(255,255,255,.5);}
+.qa:hover{top:3px;box-shadow:0 5px 0 rgba(0,0,0,.22),0 8px 14px rgba(5,50,110,.3),inset 0 2px 0 rgba(255,255,255,.5);}
+.qa:active{top:8px;box-shadow:0 0 0 rgba(0,0,0,.22),inset 0 2px 0 rgba(255,255,255,.5);}
+.qa svg{width:38px;height:38px;flex-shrink:0;}
+.qa b{display:block;font-size:17px;}
+.qa small{font-size:12.5px;opacity:.92;}
+.q-blue{background:linear-gradient(180deg,#3b9bf7,#0d57b8);}
+.q-teal{background:linear-gradient(180deg,#2fc4a6,#0b8070);}
+.q-purple{background:linear-gradient(180deg,#8a77f5,#4d39bd);}
+.q-orange{background:linear-gradient(180deg,#f5ab48,#c46a0c);}
+@media(max-width:1100px){.quick{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:480px){.quick{gap:12px;}.qa{padding:12px;gap:8px;border-radius:18px;}.qa svg{width:28px;height:28px;}.qa b{font-size:14px;}.qa small{font-size:11px;}}
+
 /* CLASS PHOTOS */
 .photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-items:start;}
 .photo-grid.n1{grid-template-columns:1fr;}
@@ -228,19 +491,20 @@ textarea:focus{outline:none;border-color:var(--sky-dark);box-shadow:0 0 0 3px rg
 </head>
 <body>
 <header class="app-header">
-  <div class="logo">ॐ</div>
-  <div class="title-group"><h1>जैन पाठशाला</h1><p>श्री अरिहंत विकास समिति</p></div>
-  <div id="liveClock" class="hidden" style="margin-left:16px;font-size:12px;color:#bae6fd;white-space:nowrap;"></div>
+  <div class="logo" id="hdrLogo"></div>
+  <div class="title-group"><h1 id="hdrTitle">जैन पाठशाला</h1><p id="hdrSub">श्री अरिहन्त विकास समिति</p></div>
+  <div id="liveClock" class="hidden" style="margin-left:16px;font-size:12px;white-space:nowrap;"></div>
   <div class="header-right">
     <div class="hdr-stats">
-      <div>🟢 अभी ऑनलाइन: <b id="liveOnlineCount">-</b></div>
-      <div>👁️ कुल विज़िटर: <b id="liveTotalCount">-</b></div>
+      <div>🟢 <span id="lblOnline">अभी ऑनलाइन</span>: <b class="js-online">-</b></div>
+      <div>👁️ <span id="lblTotal">कुल विज़िटर</span>: <b class="js-total">-</b></div>
     </div>
+    <span class="js-pills"></span>
     <button class="btn-logout hidden" id="logoutBtn" onclick="logout()">लॉगआउट</button>
   </div>
 </header>
 <main class="app-main" id="appMain"><div class="spinner"></div></main>
-<footer class="app-footer">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏<div style="margin-top:6px;font-size:13px;"><a href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div><div style="margin-top:4px;font-size:10px;opacity:.55;">v15</div></footer>
+<footer class="app-footer"><div id="ftAddr">🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏</div><div style="margin-top:6px;font-size:13px;"><a id="ftPanchang" href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener">जैन पंचांग के लिए क्लिक करें</a></div><div id="ftCopy" style="margin-top:6px;font-size:12px;opacity:.8;"></div><div style="margin-top:4px;font-size:10px;opacity:.55;">v16</div></footer>
 <div class="modal-bg hidden" id="modalBg"><div class="modal" id="modalBox"></div></div>
 
 <script src="config.js"></script>
@@ -250,6 +514,225 @@ const API=SUPABASE_URL+'/rest/v1/';
 const H={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
 
 let ME=null;
+
+// ══════════════════════════════════════════════
+// THEME · LANGUAGE · ICONS · SHELL (v16)
+// ══════════════════════════════════════════════
+const ICO={
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.9.3 5 2.7 5 5.8"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+  calcheck:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15l2.2 2.2L15.5 13"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17h2M11 17h2"/>',
+  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  cap:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/>',
+  chart:'<rect x="4" y="11" width="3.5" height="9" rx="1"/><rect x="10.2" y="5" width="3.5" height="15" rx="1"/><rect x="16.5" y="13" width="3.5" height="7" rx="1"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
+  power:'<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
+  chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v2a3 3 0 0 0 3 3M16 6h4v2a3 3 0 0 1-3 3M12 13v4M8.5 20h7"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.2 7.7-8 9-4.8-1.3-8-4.5-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+  device:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15.5 12v2.5"/>',
+  moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  lotus:'<path d="M12 5c2 2.5 2 6 0 9-2-3-2-6.5 0-9z"/><path d="M12 14c-1-3-4-5-8-5 0 4 3 7 8 7M12 14c1-3 4-5 8-5 0 4-3 7-8 7"/>',
+  prev:'<path d="M15 6l-6 6 6 6"/>',
+  next:'<path d="M9 6l6 6-6 6"/>',
+  userplus:'<circle cx="9" cy="8" r="3.4"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M18 8v6M15 11h6"/>'
+};
+function ic(n,c){return '<svg class="'+(c||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICO[n]||'')+'</svg>';}
+
+// Water drop logo (no gradients/ids so it renders correctly everywhere)
+const DROP='<svg class="drop" viewBox="0 0 48 56" aria-hidden="true"><path d="M24 3C17 14 7 22 7 34a17 17 0 0 0 34 0C41 22 31 14 24 3z" fill="#2b97ea" stroke="#e3f5ff" stroke-width="1.6"/><path d="M24 3C17 14 7 22 7 34a17 17 0 0 0 10 15.5C10 40 14 22 24 3z" fill="#7fd0ff" opacity=".55"/><path d="M16 34a8 8 0 0 0 6 8" stroke="#fff" stroke-opacity=".85" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
+
+// Fallback emblem (put your own logo.png next to index.html and it replaces this automatically)
+const EMBLEM='<svg viewBox="0 0 200 150" aria-hidden="true"><g transform="translate(100,118)">'
+ +'<ellipse cy="-52" rx="19" ry="52" fill="#2b4fbd" stroke="#fff" stroke-width="2" transform="rotate(-62)"/>'
+ +'<ellipse cy="-52" rx="19" ry="52" fill="#2fa84f" stroke="#fff" stroke-width="2" transform="rotate(-31)"/>'
+ +'<ellipse cy="-52" rx="19" ry="52" fill="#f2c230" stroke="#fff" stroke-width="2" transform="rotate(31)"/>'
+ +'<ellipse cy="-52" rx="19" ry="52" fill="#e0302a" stroke="#fff" stroke-width="2" transform="rotate(62)"/>'
+ +'<ellipse cy="-56" rx="22" ry="58" fill="#fff" stroke="#ffd36b" stroke-width="2.5"/>'
+ +'<circle cy="-62" r="17" fill="#fff" stroke="#e0302a" stroke-width="3"/><circle cy="-62" r="8" fill="#2b97ea"/></g>'
+ +'<path d="M22 112H178V142H22z" fill="#d7261e" stroke="#ffd36b" stroke-width="2.5"/>'
+ +'<text x="100" y="133" text-anchor="middle" fill="#fff" font-size="19" font-weight="700" font-family="inherit">॥ श्री अरिहन्त ॥</text></svg>';
+function emblemFallback(img){img.onerror=null;const d=document.createElement('div');d.className='lp-emblem';d.innerHTML=EMBLEM;img.replaceWith(d);}
+
+const LOTUS='<svg viewBox="0 0 260 150" aria-hidden="true"><ellipse cx="130" cy="128" rx="122" ry="15" fill="rgba(255,255,255,.14)"/><ellipse cx="130" cy="128" rx="92" ry="10" fill="none" stroke="rgba(255,255,255,.35)"/><ellipse cx="130" cy="128" rx="62" ry="6" fill="none" stroke="rgba(255,255,255,.45)"/>'
+ +'<g transform="translate(130,118)" stroke="#f1b4d2" stroke-width="1.6">'
+ +'<ellipse cy="-38" rx="15" ry="40" fill="#fbe3ef" transform="rotate(-78)"/><ellipse cy="-38" rx="15" ry="40" fill="#fbe3ef" transform="rotate(78)"/>'
+ +'<ellipse cy="-42" rx="16" ry="44" fill="#fdeef5" transform="rotate(-52)"/><ellipse cy="-42" rx="16" ry="44" fill="#fdeef5" transform="rotate(52)"/>'
+ +'<ellipse cy="-44" rx="16" ry="46" fill="#fff" transform="rotate(-26)"/><ellipse cy="-44" rx="16" ry="46" fill="#fff" transform="rotate(26)"/>'
+ +'<ellipse cy="-46" rx="16" ry="48" fill="#fff"/><circle cy="-12" r="9" fill="#ffd36b" stroke="#f2b227"/></g></svg>';
+
+const TEMPLE='<svg viewBox="0 0 560 330" aria-hidden="true"><g fill="#1d5a9a">'
+ +'<g id="spire"><rect x="210" y="240" width="180" height="60"/><path d="M220 240h160l-20-40H240zM245 200h110l-15-40H260zM265 160h70l-13-35h-44zM282 125h36l-10-30h-16z"/><path d="M292 95Q300 62 300 32Q300 62 308 95z"/><circle cx="300" cy="28" r="5"/></g>'
+ +'<use href="#spire" transform="translate(-170,95) scale(.68)"/><use href="#spire" transform="translate(170,95) scale(.68)"/>'
+ +'<rect x="60" y="300" width="440" height="30"/><rect x="298" y="6" width="2.5" height="24"/><path d="M300 6l26 7-26 7z" fill="#e58a2d"/></g></svg>';
+
+const TX={
+ hi:{sys_full:'जैन पाठशाला प्रबंधन प्रणाली',jp:'जैन पाठशाला',brand:'श्री अरिहन्त विकास समिति',sys:'प्रबंधन प्रणाली',tagline:'ज्ञान • संस्कार • सेवा',
+  login:'लॉगिन करें',login_sub:'अपनी भूमिका चुनकर प्रवेश करें',r_admin:'प्रशासक',r_admin_s:'(Administrator)',r_teacher:'शिक्षक',r_teacher_s:'(Teacher)',r_parent:'अभिभावक',r_parent_s:'(Parent)',
+  secure:'सुरक्षित लॉगिन | आपकी जानकारी सुरक्षित है',
+  f1_t:'सुरक्षित एवं विश्वसनीय',f1_d:'PIN एवं मोबाइल सत्यापन से सुरक्षित प्रवेश।',
+  f2_t:'हर डिवाइस पर उपलब्ध',f2_d:'मोबाइल, टैबलेट, लैपटॉप और डेस्कटॉप पर सुगम उपयोग।',
+  f3_t:'जैन पंचांग',f3_d:'तिथि, चौघड़िया और पच्चक्खाण के लिए क्लिक करें।',
+  dark:'डार्क मोड',light:'लाइट मोड',online:'अभी ऑनलाइन',visitors:'कुल विज़िटर',
+  copy:'© {y} श्री अरिहन्त विकास समिति. सर्वाधिकार सुरक्षित.',panchang_link:'जैन पंचांग के लिए क्लिक करें',
+  addr_line:'🙏 श्री अरिहंत विकास समिति, चन्द्र शेखर आजाद नगर, भीलवाड़ा, राजस्थान 🙏',
+  n_dash:'डैशबोर्ड',n_students:'विद्यार्थी',n_teachers:'शिक्षक',n_awcount:'पुरस्कार संख्या',n_monthly:'मासिक पुरस्कार',n_settings:'सेटिंग्स / Reset',n_pin:'PIN बदलें',n_poster:'पोस्टर',n_logout:'लॉगआउट',n_att:'उपस्थिति व रेटिंग',n_rank:'रैंकिंग',n_mypin:'मेरा PIN',
+  welcome:'नमस्ते,',admin_role:'प्रशासक',teacher_role:'शिक्षक',teacher_sub:'जैन पाठशाला — साझा कक्षा',academic:'शैक्षणिक माह',
+  t_students:'कुल विद्यार्थी',t_new:'{n} इस माह नए',t_att:'उपस्थिति (पिछली कक्षा)',t_att_today:'आज की उपस्थिति',t_att_last:'पिछली कक्षा की उपस्थिति',t_rat:'दी गई रेटिंग',t_rat_sub:'इस माह',t_teachers:'कुल शिक्षक',t_teachers_sub:'सक्रिय शिक्षक',
+  recent:'हाल के विद्यार्थी',view_all:'सभी देखें',c_name:'नाम',c_age:'उम्र',c_gender:'लिंग',c_parent:'अभिभावक',c_status:'स्थिति',male:'बालक',female:'बालिका',active:'सक्रिय',inactive:'निष्क्रिय',no_students:'कोई विद्यार्थी नहीं।',
+  qa_t:'शिक्षक जोड़ें',qa_t_s:'नया शिक्षक पंजीकरण',qa_s:'विद्यार्थी सूची',qa_s_s:'सभी विद्यार्थी देखें',qa_a:'पुरस्कार चुनें',qa_a_s:'मासिक विजेता',qa_w:'WhatsApp संदेश',qa_w_s:'अभिभावकों को सूचना',
+  cal_today:'आज',cal_class:'कक्षा दिवस',present_of:'{p}/{t} उपस्थित'},
+ en:{sys_full:'Jain Pathshala Management System',jp:'Jain Pathshala',brand:'Shri Arihant Vikas Samiti',sys:'Management System',tagline:'Knowledge • Values • Service',
+  login:'Login',login_sub:'Choose your role to continue',r_admin:'Administrator',r_admin_s:'(प्रशासक)',r_teacher:'Teacher',r_teacher_s:'(शिक्षक)',r_parent:'Parent',r_parent_s:'(अभिभावक)',
+  secure:'Secure login | Your information is safe',
+  f1_t:'Secure & Trusted',f1_d:'Protected access with PIN and mobile verification.',
+  f2_t:'Available on every device',f2_d:'Works smoothly on mobile, tablet, laptop and desktop.',
+  f3_t:'Jain Panchang',f3_d:'Tithi, Choghadiya and Pachakkhan timings.',
+  dark:'Dark Mode',light:'Light Mode',online:'Online now',visitors:'Total visitors',
+  copy:'© {y} Shri Arihant Vikas Samiti. All rights reserved.',panchang_link:'Open Jain Panchang',
+  addr_line:'🙏 Shri Arihant Vikas Samiti, Chandra Shekhar Azad Nagar, Bhilwara, Rajasthan 🙏',
+  n_dash:'Dashboard',n_students:'Students',n_teachers:'Teachers',n_awcount:'Award Count',n_monthly:'Monthly Awards',n_settings:'Settings / Reset',n_pin:'Change PIN',n_poster:'Poster',n_logout:'Logout',n_att:'Attendance & Ratings',n_rank:'Rankings',n_mypin:'My PIN',
+  welcome:'Welcome back,',admin_role:'Administrator',teacher_role:'Teacher',teacher_sub:'Jain Pathshala — Shared class',academic:'Academic Month',
+  t_students:'Total Students',t_new:'{n} new this month',t_att:'Last Class Attendance',t_att_today:'Attendance Today',t_att_last:'Last Class Attendance',t_rat:'Ratings Given',t_rat_sub:'this month',t_teachers:'Total Teachers',t_teachers_sub:'Active teachers',
+  recent:'Recent Students',view_all:'View All',c_name:'Name',c_age:'Age',c_gender:'Gender',c_parent:'Parent Name',c_status:'Status',male:'Male',female:'Female',active:'Active',inactive:'Inactive',no_students:'No students yet.',
+  qa_t:'Add Teacher',qa_t_s:'Register new teacher',qa_s:'Student List',qa_s_s:'View all students',qa_a:'Choose Awards',qa_a_s:'Monthly winners',qa_w:'WhatsApp Message',qa_w_s:'Notify parents',
+  cal_today:'Today',cal_class:'Class day',present_of:'{p}/{t} present'}
+};
+function LANG(){try{return localStorage.getItem('jpLang')==='en'?'en':'hi';}catch(e){return 'hi';}}
+function tx(k,v){let s=(TX[LANG()]||{})[k];if(s==null)s=TX.hi[k];if(s==null)return k;return v?s.replace(/\{(\w+)\}/g,(m,n)=>v[n]==null?'':v[n]):s;}
+function isDark(){return document.documentElement.classList.contains('dark');}
+function toggleDark(){const on=!isDark();document.documentElement.classList.toggle('dark',on);try{localStorage.setItem('jpDark',on?'1':'0');}catch(e){}applyChrome();}
+function toggleLang(){try{localStorage.setItem('jpLang',LANG()==='hi'?'en':'hi');}catch(e){}document.documentElement.lang=LANG();applyChrome();ME?routeMe():showLanding();}
+function pillsHTML(){return '<button class="pill-btn" onclick="toggleLang()">'+ic('globe')+'<span class="pt">'+(LANG()==='hi'?'English':'हिन्दी')+'</span></button><button class="pill-btn" onclick="toggleDark()">'+ic(isDark()?'sun':'moon')+'<span class="pt">'+(isDark()?tx('light'):tx('dark'))+'</span></button>';}
+function setMode(m){document.body.classList.remove('mode-landing','mode-shell');if(m)document.body.classList.add('mode-'+m);}
+function setCounters(){
+  document.querySelectorAll('.js-online').forEach(e=>e.textContent=window._online==null?'-':window._online);
+  document.querySelectorAll('.js-total').forEach(e=>e.textContent=window._total==null?'-':window._total);
+}
+function applyChrome(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('hdrTitle',tx('jp'));set('hdrSub',tx('brand'));set('lblOnline',tx('online'));set('lblTotal',tx('visitors'));
+  set('logoutBtn',tx('n_logout'));set('ftAddr',tx('addr_line'));set('ftPanchang',tx('panchang_link'));set('ftCopy',tx('copy',{y:new Date().getFullYear()}));
+  const lg=document.getElementById('hdrLogo');if(lg&&!lg.firstChild)lg.innerHTML=DROP;
+  document.querySelectorAll('.js-pills').forEach(e=>e.innerHTML=pillsHTML());
+  setCounters();
+  if(window._tick)window._tick();
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pad2(n){return String(n).padStart(2,'0');}
+function ageOf(dob){
+  if(!dob)return '-';
+  const b=new Date(dob+'T00:00:00');if(isNaN(b))return '-';
+  const n=new Date();let a=n.getFullYear()-b.getFullYear();
+  if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate()))a--;
+  return a<0?'-':a;
+}
+const AVC=['linear-gradient(160deg,#f0a23a,#c2680d)','linear-gradient(160deg,#27b59a,#0c7a6a)','linear-gradient(160deg,#7e6cf0,#4a37b5)','linear-gradient(160deg,#2f8cf0,#0f4fa8)','linear-gradient(160deg,#ef6a8a,#b3315a)'];
+
+// Sidebar + welcome row shared by Admin and Teacher
+function sidebar(items,prefix){
+  const mon=new Date().toLocaleDateString(LANG()==='en'?'en-IN':'hi-IN',{month:'long',year:'numeric'});
+  const lg=LANG()==='en'?['JAIN','PATHSHALA']:['जैन','पाठशाला'];
+  return '<aside class="sb"><div class="sb-logo">'+DROP+'<div><b>'+lg[0]+'</b><span>'+lg[1]+'</span></div></div><nav class="sb-nav">'
+   +items.map(i=>i.href
+     ?'<a class="sb-item" href="'+i.href+'" target="_blank" rel="noopener">'+ic(i.icon)+'<span>'+i.label+'</span></a>'
+     :'<button class="sb-item'+(i.on?' active':'')+'" id="'+prefix+'-'+i.k+'" onclick="'+i.fn+'">'+ic(i.icon)+'<span>'+i.label+'</span></button>').join('')
+   +'</nav><div class="sb-month"><div><small>'+tx('academic')+'</small><b>'+mon+'</b></div><div class="cal">'+ic('calendar')+'</div></div></aside>';
+}
+function welcomeRow(who,sub,role){
+  return '<div class="welcome"><div><h2>'+tx('welcome')+' '+esc(who)+' 👋</h2><p>'+sub+'</p></div>'
+   +'<div class="w-right"><span class="js-pills"></span><div class="w-date js-dt"></div>'
+   +'<div class="w-user"><div class="w-avatar">'+ic('user')+'</div><div><b>'+esc(who)+'</b><small>'+role+'</small></div></div></div></div>'
+   +'<div class="w-pills"><span class="mini">🟢 '+tx('online')+': <b class="js-online">-</b></span><span class="mini">👁️ '+tx('visitors')+': <b class="js-total">-</b></span></div>';
+}
+
+// ── Admin dashboard: async stats + calendar ──
+window._classDates=new Set();window._calY=null;window._calM=null;
+function dashTile(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
+async function loadAdminDash(){
+  const my=today().substring(0,7);
+  // 1) class days for the calendar
+  (async()=>{try{
+    const cds=await dbGet('class_dates?is_active=eq.true&select=class_date');
+    window._classDates=new Set((cds||[]).map(c=>c.class_date));renderCal();
+  }catch(e){}})();
+  // 2) ratings given this month
+  (async()=>{try{
+    const r=await dbGet('performance?month_year=eq.'+my+'&select=rating');
+    dashTile('dRat',String((r||[]).length));
+    dashTile('dRatS',(r||[]).length?'↗ '+tx('t_rat_sub'):'&nbsp;');
+  }catch(e){dashTile('dRat','—');}})();
+  // 3) attendance of today's / the last class
+  (async()=>{try{
+    const rows=await dbGet('class_dates?is_active=eq.true&class_date=lte.'+today()+'&order=class_date.desc&limit=1&select=id,class_date');
+    if(!rows||!rows.length)return;
+    const cd=rows[0];
+    const [stus,att]=await Promise.all([
+      dbGet('students?select=id,joining_date,is_active'),
+      dbGet('attendance?class_date_id=eq.'+cd.id+'&select=status')
+    ]);
+    if(!att||!att.length)return;
+    const total=(stus||[]).filter(s=>s.is_active!==false&&(!s.joining_date||s.joining_date<=cd.class_date)).length;
+    const present=att.filter(r=>r.status==='present').length;
+    const pct=total?Math.round(present/total*100):0;
+    dashTile('dAttL',cd.class_date===today()?tx('t_att_today'):tx('t_att_last'));
+    dashTile('dAtt',pct+'%');
+    dashTile('dAttS','↗ '+tx('present_of',{p:present,t:total})+' · '+fmtDate(cd.class_date));
+  }catch(e){}})();
+}
+function renderCal(){
+  const el=document.getElementById('dCal');if(!el)return;
+  const now=new Date();
+  if(window._calY==null){window._calY=now.getFullYear();window._calM=now.getMonth();}
+  const y=window._calY,m=window._calM,lang=LANG();
+  const startWd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),prevDim=new Date(y,m,0).getDate();
+  const wds=lang==='en'?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']:['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'];
+  const tIso=today();let cells='';
+  for(let i=0;i<startWd;i++)cells+='<div class="d o"><span>'+(prevDim-startWd+1+i)+'</span></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=y+'-'+pad2(m+1)+'-'+pad2(d);
+    const c=['d'];if(iso===tIso)c.push('today');if(window._classDates.has(iso))c.push('cls');
+    cells+='<div class="'+c.join(' ')+'"><span>'+d+'</span></div>';
+  }
+  const rem=(7-(startWd+dim)%7)%7;
+  for(let i=1;i<=rem;i++)cells+='<div class="d o"><span>'+i+'</span></div>';
+  const title=new Date(y,m,1).toLocaleDateString(lang==='en'?'en-IN':'hi-IN',{month:'long',year:'numeric'});
+  el.innerHTML='<div class="cal-h"><button class="cal-nav" onclick="calNav(-1)" aria-label="prev">'+ic('prev')+'</button><b>'+title+'</b><button class="cal-nav" onclick="calNav(1)" aria-label="next">'+ic('next')+'</button></div>'
+   +'<div class="cal-g">'+wds.map(w=>'<div class="wd">'+w+'</div>').join('')+cells+'</div>'
+   +'<div class="cal-foot"><span>'+tx('cal_today')+': '+fmtDate(tIso)+'</span><span><i></i>'+tx('cal_class')+'</span></div>';
+}
+function calNav(n){const d=new Date(window._calY,window._calM+n,1);window._calY=d.getFullYear();window._calM=d.getMonth();renderCal();}
+function adminDashHTML(students,tc,sc){
+  const my=today().substring(0,7);
+  const newN=(students||[]).filter(s=>s.is_active!==false&&(s.joining_date||'').startsWith(my)).length;
+  const recent=[...(students||[])].sort((a,b)=>(b.joining_date||'').localeCompare(a.joining_date||'')).slice(0,5);
+  const rows=recent.map((s,i)=>'<tr><td>'+(i+1)+'</td><td><span class="av" style="background:'+AVC[i%AVC.length]+'">'+esc((s.name||'?').trim().charAt(0).toUpperCase())+'</span>'+esc(s.name)+'</td><td>'+ageOf(s.dob)+'</td><td class="c-gender">'+(s.salutation==='Mr'?tx('male'):tx('female'))+'</td><td>'+esc(s.father_name||s.mother_name||'-')+'</td><td><span class="pill '+(s.is_active===false?'pill-off':'pill-ok')+'">'+(s.is_active===false?tx('inactive'):tx('active'))+'</span></td></tr>').join('');
+  return '<div id="ap-d">'
+   +welcomeRow('Admin',tx('sys_full'),tx('admin_role'))
+   +'<div id="birthdayDivAdmin"></div>'
+   +'<div class="tiles">'
+   +'<div class="tile t-blue">'+ic('users','ti')+'<div><small>'+tx('t_students')+'</small><b>'+sc+'</b><em>'+(newN?'↗ '+tx('t_new',{n:newN}):'&nbsp;')+'</em></div></div>'
+   +'<div class="tile t-teal">'+ic('calcheck','ti')+'<div><small id="dAttL">'+tx('t_att')+'</small><b id="dAtt">—</b><em id="dAttS">&nbsp;</em></div></div>'
+   +'<div class="tile t-purple">'+ic('star','ti')+'<div><small>'+tx('t_rat')+'</small><b id="dRat">—</b><em id="dRatS">&nbsp;</em></div></div>'
+   +'<div class="tile t-orange">'+ic('cap','ti')+'<div><small>'+tx('t_teachers')+'</small><b>'+tc+'</b><em>'+tx('t_teachers_sub')+'</em></div></div>'
+   +'</div>'
+   +'<div class="dash-grid"><div class="gp"><div class="gp-h"><h3>'+ic('users')+tx('recent')+'</h3><button class="btn-glass" onclick="atab(\'s\')">'+tx('view_all')+'</button></div>'
+   +'<div class="rt-wrap">'+(recent.length?'<table class="rt"><thead><tr><th>#</th><th>'+tx('c_name')+'</th><th>'+tx('c_age')+'</th><th class="c-gender">'+tx('c_gender')+'</th><th>'+tx('c_parent')+'</th><th>'+tx('c_status')+'</th></tr></thead><tbody>'+rows+'</tbody></table>':'<p>'+tx('no_students')+'</p>')+'</div></div>'
+   +'<div class="gp"><div id="dCal"></div></div></div>'
+   +'<div class="quick">'
+   +'<button class="qa q-blue" onclick="mAddTeacher()">'+ic('userplus')+'<span><b>'+tx('qa_t')+'</b><small>'+tx('qa_t_s')+'</small></span></button>'
+   +'<button class="qa q-teal" onclick="atab(\'s\')">'+ic('users')+'<span><b>'+tx('qa_s')+'</b><small>'+tx('qa_s_s')+'</small></span></button>'
+   +'<button class="qa q-purple" onclick="atab(\'mn\')">'+ic('trophy')+'<span><b>'+tx('qa_a')+'</b><small>'+tx('qa_a_s')+'</small></span></button>'
+   +'<button class="qa q-orange" onclick="atab(\'wa\')">'+ic('chat')+'<span><b>'+tx('qa_w')+'</b><small>'+tx('qa_w_s')+'</small></span></button>'
+   +'</div></div>';
+}
 
 async function db(path,method='GET',body=null,extra={}){
   const opts={method,headers:{...H,...extra}};
@@ -275,6 +758,8 @@ const dbUpsert=(p,b)=>db(p,'POST',b,{'Prefer':'resolution=merge-duplicates,retur
 window.addEventListener('load',()=>{
   const s=sessionStorage.getItem('jpMe');
   if(s)try{ME=JSON.parse(s);}catch(e){}
+  document.documentElement.lang=LANG();
+  applyChrome();
   ME?(routeMe(),readVisitorCount()):showLanding();
   startClock();
   liveTick();
@@ -308,28 +793,28 @@ async function heartbeat(){
 }
 
 async function loadLiveOnline(){
-  const el=document.getElementById('liveOnlineCount');
-  if(!el)return;
+  if(!document.querySelector('.js-online'))return;
   try{
     const cutoff=new Date(Date.now()-90000).toISOString(); // active in last 90s
     const rows=await dbGet('visitor_sessions?last_seen=gte.'+cutoff+'&select=session_id');
-    el.textContent=(rows||[]).length;
-  }catch(e){el.textContent='-';}
+    window._online=(rows||[]).length;setCounters();
+  }catch(e){window._online='-';setCounters();}
 }
 
 function startClock(){
   function tick(){
+    const d=new Date(),lang=LANG();
     const el=document.getElementById('liveClock');
-    if(!el)return;
-    const d=new Date();
-    const dd=String(d.getDate()).padStart(2,'0');
-    const mm=String(d.getMonth()+1).padStart(2,'0');
-    const yyyy=d.getFullYear();
-    let h=d.getHours();const ampm=h>=12?'PM':'AM';h=h%12;if(h===0)h=12;
-    const mi=String(d.getMinutes()).padStart(2,'0');
-    const se=String(d.getSeconds()).padStart(2,'0');
-    el.textContent='📅 '+dd+'-'+mm+'-'+yyyy+'  🕐 '+h+':'+mi+':'+se+' '+ampm;
+    if(el){
+      const dd=pad2(d.getDate()),mm=pad2(d.getMonth()+1),yyyy=d.getFullYear();
+      let h=d.getHours();const ampm=h>=12?'PM':'AM';h=h%12;if(h===0)h=12;
+      el.textContent='📅 '+dd+'-'+mm+'-'+yyyy+'  🕐 '+h+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())+' '+ampm;
+    }
+    const loc=lang==='en'?'en-GB':'hi-IN';
+    const html='<div>'+d.toLocaleDateString(loc,{day:'numeric',month:'long',year:'numeric'})+'</div><div>'+d.toLocaleDateString(loc,{weekday:'long'})+', '+d.toLocaleTimeString(lang==='en'?'en-IN':'hi-IN',{hour:'numeric',minute:'2-digit',hour12:true})+'</div>';
+    document.querySelectorAll('.js-dt').forEach(e=>{if(e._h!==html){e.innerHTML=html;e._h=html;}});
   }
+  window._tick=tick;
   tick();
   setInterval(tick,1000);
 }
@@ -349,29 +834,52 @@ function saveMe(o){ME=o;sessionStorage.setItem('jpMe',JSON.stringify(o));}
 
 // ── LANDING ──────────────────────────────────
 async function showLanding(){
+  setMode('landing');
   document.getElementById('liveClock')?.classList.add('hidden');
   setMain(`
-    <div class="text-center" style="margin-bottom:20px;">
-      <div style="font-size:56px;margin-bottom:12px;">🙏</div>
-      <h1 style="font-size:30px;font-weight:800;color:var(--sky-deeper);margin-bottom:8px;">जैन पाठशाला</h1>
-      <p style="color:#64748b;">श्री अरिहंत विकास समिति — भीलवाड़ा</p>
+  <div class="lp">
+    <div class="lp-temple">${TEMPLE}</div>
+    <aside class="lp-brand"><div class="lp-brand-in">
+      <img class="lp-emblem" src="logo.png" alt="" onerror="emblemFallback(this)">
+      <div class="lp-text"><h2>${tx('brand')}</h2><div class="lp-reg">Reg. No.: 65/भील./1998-99/17-7/98</div></div>
+      <div class="lp-div"></div>
+      <div class="lp-addr">${ic('pin')}<div>7-H-15, Chandra Shekhar<br>Azad Nagar, Bhilwara (Raj.)<br>311001</div></div>
+      <div class="lp-lotus">${LOTUS}</div>
+    </div></aside>
+    <div class="lp-center">
+      <div class="lp-top"><span class="mini">🟢 ${tx('online')}: <b class="js-online">-</b></span><span class="mini">👁️ ${tx('visitors')}: <b class="js-total">-</b></span><span class="js-pills"></span></div>
+      <div class="lp-card card">
+        <div class="lp-drop">${DROP}</div>
+        <h1 class="lp-h1">${tx('jp')}</h1>
+        <div class="lp-h2">${tx('sys')}</div>
+        <div class="lp-orn"><span></span>${ic('lotus')}<span></span></div>
+        <div class="lp-tag">${tx('tagline')}</div>
+        <div class="lp-login">
+          <div class="lp-lh">${ic('users')}<div><b>${tx('login')}</b><small>${tx('login_sub')}</small></div></div>
+          <div class="roles">
+            <button class="role r-admin" onclick="showAdminLogin()"><span class="ri">${ic('user')}</span><b>${tx('r_admin')}</b><small>${tx('r_admin_s')}</small></button>
+            <button class="role r-teacher" onclick="showTeacherLogin()"><span class="ri">${ic('cap')}</span><b>${tx('r_teacher')}</b><small>${tx('r_teacher_s')}</small></button>
+            <button class="role r-parent" onclick="showParentSearch()"><span class="ri">${ic('users')}</span><b>${tx('r_parent')}</b><small>${tx('r_parent_s')}</small></button>
+          </div>
+        </div>
+        <div class="lp-sec">${ic('shield')}<span>${tx('secure')}</span></div>
+      </div>
+      <div class="lp-public">
+        <div id="dailyQuoteDiv" class="mb-3"></div>
+        <div id="panchangDiv" class="mb-3"></div>
+        <div id="photoDiv" class="mb-3"></div>
+        <div id="lastClassDiv" class="mb-3"></div>
+        <div id="birthdayDiv"></div>
+        <div id="winnersDiv" class="mb-3"></div>
+        <div id="visitorDiv" class="text-center"></div>
+      </div>
     </div>
-
-    <div id="dailyQuoteDiv" class="mb-3"></div>
-    <div id="panchangDiv" class="mb-3"></div>
-    <div id="photoDiv" class="mb-3"></div>
-    <div id="lastClassDiv" class="mb-3"></div>
-    <div id="birthdayDiv"></div>
-    <div id="winnersDiv" class="mb-3"></div>
-
-    <div class="login-cards mb-3">
-      <div class="lcard" onclick="showAdminLogin()"><div class="ic">👑</div><h3>Admin</h3><p>सम्पूर्ण प्रबंधन</p></div>
-      <div class="lcard" onclick="showTeacherLogin()"><div class="ic">📚</div><h3>शिक्षक / शिक्षिका</h3><p>उपस्थिति एवं प्रदर्शन</p></div>
-      <div class="lcard" onclick="showParentSearch()"><div class="ic">👨‍👩‍👧</div><h3>अभिभावक</h3><p>बच्चे की जानकारी</p></div>
-    </div>
-
-    <div id="visitorDiv" class="text-center"></div>
-  `);
+    <aside class="lp-feat">
+      <div class="fcard card"><div class="fi">${ic('shield')}</div><div><b>${tx('f1_t')}</b><span>${tx('f1_d')}</span></div></div>
+      <div class="fcard card"><div class="fi">${ic('device')}</div><div><b>${tx('f2_t')}</b><span>${tx('f2_d')}</span></div></div>
+      <a class="fcard card" href="https://csa-arihant.github.io/jain-panchang/" target="_blank" rel="noopener"><div class="fi">${ic('calendar')}</div><div><b>${tx('f3_t')}</b><span>${tx('f3_d')}</span></div></a>
+    </aside>
+  </div>`);
   loadDailyQuote();
   loadPanchang();
   loadLandingPhotos();
@@ -385,8 +893,7 @@ async function showLanding(){
 async function readVisitorCount(){
   try{
     const rows=await dbGet('visitor_count?id=eq.1&select=count');
-    const tc=document.getElementById('liveTotalCount');
-    if(tc&&rows&&rows.length)tc.textContent=rows[0].count||0;
+    if(rows&&rows.length){window._total=rows[0].count||0;setCounters();}
   }catch(e){}
 }
 async function bumpVisitorCount(){
@@ -402,7 +909,7 @@ async function bumpVisitorCount(){
       newCount=1;
       await dbPost('visitor_count',{id:1,count:1});
     }
-    const tc=document.getElementById('liveTotalCount');if(tc)tc.textContent=newCount;
+    window._total=newCount;setCounters();
   }catch(e){
     if(el)el.innerHTML='';
     console.warn('Visitor counter table missing — run updated SQL to enable.');
@@ -608,6 +1115,7 @@ async function loadPanchang(){
 
 // ── PIN SCREEN ───────────────────────────────
 function showAdminLogin(){
+  setMode('');
   window._pin='';
   setMain(`
     <button class="back-btn" onclick="showLanding()">← वापस</button>
@@ -622,6 +1130,7 @@ function showAdminLogin(){
 }
 
 async function showTeacherLogin(){
+  setMode('');
   setMain('<div class="spinner"></div>');
   let teachers=[];
   try{teachers=await dbGet('teachers?select=id,salutation,name&order=name');}catch(e){}
@@ -682,6 +1191,8 @@ function pinErr(msg){
 // ADMIN
 // ══════════════════════════════════════════════
 async function showAdmin(){
+  setMode('shell');
+  window._calY=null;
   document.getElementById('logoutBtn').classList.remove('hidden');
   setMain('<div class="spinner"></div>');
   try{
@@ -694,25 +1205,23 @@ async function showAdmin(){
     const acAtt=cfg?.[0]?.attendance_award_count??cfg?.[0]?.award_count??2;
     const acPerf=cfg?.[0]?.performance_award_count??cfg?.[0]?.award_count??2;
     setMain(`
-      <div class="section-title">👑 Admin Panel</div>
-      <div id="birthdayDivAdmin"></div>
-      <div class="stat-grid stat-grid3">
-        <div class="stat-card"><div class="sc-val">${tc}</div><div class="sc-label">शिक्षक</div></div>
-        <div class="stat-card"><div class="sc-val">${sc}</div><div class="sc-label">विद्यार्थी</div></div>
-        <div class="stat-card"><div class="sc-val">${acAtt}/${acPerf}</div><div class="sc-label">पुरस्कार (उप./प्रद.)</div></div>
-      </div>
-      <div class="tabs">
-        <div class="tab active" id="at-t" onclick="atab('t')">शिक्षक</div>
-        <div class="tab" id="at-s" onclick="atab('s')">विद्यार्थी</div>
-        <div class="tab" id="at-aw" onclick="atab('aw')">पुरस्कार</div>
-        <div class="tab" id="at-mn" onclick="atab('mn')">मासिक</div>
-        <div class="tab" id="at-wa" onclick="atab('wa')">📲 WhatsApp</div>
-        <div class="tab" id="at-rs" onclick="atab('rs')">Reset</div>
-        <div class="tab" id="at-pin" onclick="atab('pin')">PIN</div>
-        <a class="tab" href="prabhavana.html" target="_blank" rel="noopener" style="text-decoration:none">🖼️ पोस्टर</a>
-      </div>
+      <div class="shell">
+      ${sidebar([
+        {k:'d',icon:'home',label:tx('n_dash'),fn:"atab('d')",on:true},
+        {k:'s',icon:'users',label:tx('n_students'),fn:"atab('s')"},
+        {k:'t',icon:'cap',label:tx('n_teachers'),fn:"atab('t')"},
+        {k:'aw',icon:'star',label:tx('n_awcount'),fn:"atab('aw')"},
+        {k:'mn',icon:'trophy',label:tx('n_monthly'),fn:"atab('mn')"},
+        {k:'wa',icon:'chat',label:'WhatsApp',fn:"atab('wa')"},
+        {k:'rs',icon:'gear',label:tx('n_settings'),fn:"atab('rs')"},
+        {k:'pin',icon:'key',label:tx('n_pin'),fn:"atab('pin')"},
+        {icon:'image',label:tx('n_poster'),href:'prabhavana.html'},
+        {k:'lo',icon:'power',label:tx('n_logout'),fn:'logout()'}
+      ],'at')}
+      <section class="sh-main">
+      ${adminDashHTML(students,tc,sc)}
 
-      <div id="ap-t">
+      <div id="ap-t" class="panel-glass hidden">
         <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
           <div class="section-title" style="margin:0;">शिक्षक सूची</div>
           <button class="btn btn-gold btn-sm" onclick="mAddTeacher()">+ जोड़ें</button>
@@ -734,7 +1243,7 @@ async function showAdmin(){
         </table></div>`}
       </div>
 
-      <div id="ap-s" class="hidden">
+      <div id="ap-s" class="panel-glass hidden">
         <div class="alert alert-info mb-3">सभी शिक्षकों को ये विद्यार्थी दिखते हैं — साझा कक्षा।</div>
         ${!(students&&students.length)?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
@@ -753,7 +1262,7 @@ async function showAdmin(){
         </table></div>`}
       </div>
 
-      <div id="ap-aw" class="hidden">
+      <div id="ap-aw" class="panel-glass hidden">
         <div class="card" style="max-width:420px;">
           <div class="card-title">🏆 पुरस्कार संख्या</div>
           <p style="font-size:13px;color:#64748b;margin-bottom:14px;">हर श्रेणी में अलग-अलग कितने विद्यार्थी?</p>
@@ -764,7 +1273,7 @@ async function showAdmin(){
         </div>
       </div>
 
-      <div id="ap-mn" class="hidden">
+      <div id="ap-mn" class="panel-glass hidden">
         <div class="alert alert-warn mb-3">माह समाप्त होने के बाद ही पुरस्कार चुनें। सूची अपने आप सुझाई गई है (टॉप वाले पहले से ✓) — आप चाहें तो बदल सकते हैं।</div>
         <div class="flex gap-3 items-center mb-3 flex-wrap">
           <select id="mnSel" onchange="loadAwardSelection()">${monthOpts()}</select>
@@ -773,7 +1282,7 @@ async function showAdmin(){
         <div id="awardsDiv"></div>
       </div>
 
-      <div id="ap-rs" class="hidden">
+      <div id="ap-rs" class="panel-glass hidden">
         <div class="card mb-3">
           <div class="card-title">🔐 शिक्षक PIN Reset</div>
           <p style="font-size:13px;color:#64748b;margin-bottom:14px;">किसी शिक्षक का PIN भूल जाने पर यहाँ से नया PIN सेट करें।</p>
@@ -819,7 +1328,7 @@ async function showAdmin(){
         </div>
       </div>
 
-      <div id="ap-wa" class="hidden">
+      <div id="ap-wa" class="panel-glass hidden">
         <div class="tabs">
           <div class="tab active" id="wsub-i" onclick="waSub('i')">👨‍👩‍👧 अभिभावक (व्यक्तिगत)</div>
           <div class="tab" id="wsub-g" onclick="waSub('g')">👥 पाठशाला ग्रुप</div>
@@ -890,7 +1399,7 @@ async function showAdmin(){
         </div>
       </div>
 
-      <div id="ap-pin" class="hidden">
+      <div id="ap-pin" class="panel-glass hidden">
         <div class="card" style="max-width:360px;">
           <div class="card-title">🔐 PIN बदलें</div>
           <div class="form-group"><label>वर्तमान PIN</label><input type="password" id="cp" maxlength="4"></div>
@@ -899,7 +1408,10 @@ async function showAdmin(){
           <button class="btn btn-gold" onclick="changePin()">बदलें</button>
           <div id="pinMsg" class="mt-3"></div>
         </div>
-      </div>`);
+      </div>
+      </section></div>`);
+    renderCal();
+    loadAdminDash();
     loadAwardSelection();
     loadRsDates();
     loadBirthdays('birthdayDivAdmin');
@@ -907,7 +1419,7 @@ async function showAdmin(){
 }
 
 function atab(t){
-  ['t','s','aw','mn','wa','rs','pin'].forEach(x=>{
+  ['d','t','s','aw','mn','wa','rs','pin'].forEach(x=>{
     document.getElementById('at-'+x)?.classList.toggle('active',x===t);
     document.getElementById('ap-'+x)?.classList.toggle('hidden',x!==t);
   });
@@ -1458,6 +1970,7 @@ async function doEditTeacher(id){
 // TEACHER
 // ══════════════════════════════════════════════
 async function showTeacher(){
+  setMode('shell');
   document.getElementById('logoutBtn').classList.remove('hidden');
   setMain('<div class="spinner"></div>');
   try{
@@ -1465,25 +1978,23 @@ async function showTeacher(){
     window._stus=students||[];
     const t=ME.data;
     setMain(`
+      <div class="shell">
+      ${sidebar([
+        {k:'s',icon:'users',label:tx('n_students'),fn:"ttab('s')",on:true},
+        {k:'ap',icon:'calcheck',label:tx('n_att'),fn:"ttab('ap')"},
+        {k:'r',icon:'trophy',label:tx('n_rank'),fn:"ttab('r')"},
+        {k:'pin',icon:'key',label:tx('n_mypin'),fn:'mTeacherChangePin()'},
+        {k:'lo',icon:'power',label:tx('n_logout'),fn:'logout()'}
+      ],'tt')}
+      <section class="sh-main">
+      ${welcomeRow(t.salutation+' '+t.name,tx('teacher_sub'),tx('teacher_role'))}
       <div id="birthdayDivTeacher"></div>
-      <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
-        <div>
-          <div class="section-title" style="margin:0;">📚 ${t.salutation} ${t.name}</div>
-          <p style="font-size:12px;color:#64748b;">जैन पाठशाला — साझा कक्षा</p>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn btn-ghost btn-sm" onclick="mTeacherChangePin()">🔐 मेरा PIN बदलें</button>
+      <div id="tp-s" class="panel-glass">
+        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+          <div class="section-title" style="margin:0;">${tx('n_students')}</div>
           <button class="btn btn-gold btn-sm" onclick="mAddStudent()">+ विद्यार्थी जोड़ें</button>
         </div>
-      </div>
-      <div class="alert alert-info mb-3" style="padding:8px 12px;font-size:12px;">ℹ️ सभी शिक्षकों को ये विद्यार्थी दिखते हैं।</div>
-      <div class="tabs">
-        <div class="tab active" id="tt-s" onclick="ttab('s')">विद्यार्थी</div>
-        <div class="tab" id="tt-ap" onclick="ttab('ap')">उपस्थिति व रेटिंग</div>
-        <div class="tab" id="tt-r" onclick="ttab('r')">🏆 रैंकिंग</div>
-      </div>
-
-      <div id="tp-s">
+        <div class="alert alert-info mb-3" style="padding:8px 12px;font-size:12px;">ℹ️ सभी शिक्षकों को ये विद्यार्थी दिखते हैं।</div>
         ${!window._stus.length?'<div class="empty"><div>👦</div><p>कोई विद्यार्थी नहीं।</p></div>':`
         <div class="table-wrap"><table>
           <thead><tr><th>#</th><th>नाम</th><th>पिता (📱)</th><th>माता (📱)</th><th>जन्म तिथि</th><th>कक्षा</th><th>गोत्र</th><th>Blood Group</th><th>Email</th><th>प्रवेश तिथि</th><th>कार्य</th></tr></thead>
@@ -1507,7 +2018,7 @@ async function showTeacher(){
         </table></div>`}
       </div>
 
-      <div id="tp-ap" class="hidden">
+      <div id="tp-ap" class="panel-glass hidden">
         <div class="month-bar">
           <select id="apMon" onchange="loadMergedDates()">${monthOpts()}</select>
           <button class="btn btn-gold btn-sm" onclick="mAddClassDate('ap')">+ कक्षा दिनांक</button>
@@ -1516,9 +2027,10 @@ async function showTeacher(){
         <div id="mergedSheetDiv"></div>
       </div>
 
-      <div id="tp-r" class="hidden">
+      <div id="tp-r" class="panel-glass hidden">
         <div id="teacherRankDiv"><div class="spinner"></div></div>
-      </div>`);
+      </div>
+      </section></div>`);
     loadMergedDates();
     loadBirthdays('birthdayDivTeacher');
   }catch(e){setMain('<div class="alert alert-err">Error: '+e.message+'</div>');}
@@ -1990,6 +2502,7 @@ async function doTeacherChangePin(){
 
 // ── PARENT ───────────────────────────────────
 function showParentSearch(){
+  setMode('');
   document.getElementById('liveClock')?.classList.remove('hidden');
   setMain(`
     <button class="back-btn" onclick="showLanding()">← वापस</button>
@@ -2052,6 +2565,7 @@ function verifyGate(sid,fLast4,mLast4){
 }
 
 async function showParentView(sid){
+  setMode('');
   setMain('<div class="spinner"></div>');
   try{
     const[sArr,attAll,perfAll,awards]=await Promise.all([
@@ -2247,7 +2761,7 @@ async function delClassPhoto(photoId,cdId){
 }
 
 // ── HELPERS ──────────────────────────────────
-function setMain(h){document.getElementById('appMain').innerHTML=h;}
+function setMain(h){document.getElementById('appMain').innerHTML=h;applyChrome();}
 function g(id){return document.getElementById(id)?.value?.trim()||'';}
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');} // local date (not UTC)
 function fmtDate(isoDate){
@@ -2274,7 +2788,7 @@ function merr(id,msg){const e=document.getElementById(id);if(e)e.innerHTML=`<div
 let _tt;
 function toast(msg,dur=2500){
   let t=document.getElementById('_toast');
-  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0c4a6e,#075985);color:#fcd34d;padding:10px 22px;border-radius:30px;font-weight:700;font-size:14px;z-index:999;box-shadow:0 4px 12px rgba(12,42,78,.4);pointer-events:none;transition:opacity .3s;border:2px solid var(--gold);';document.body.appendChild(t);}
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1670c9,#0a3d73);color:#fff;padding:10px 22px;border-radius:30px;font-weight:700;font-size:14px;z-index:999;box-shadow:0 4px 12px rgba(12,42,78,.4);pointer-events:none;transition:opacity .3s;border:2px solid rgba(255,255,255,.8);';document.body.appendChild(t);}
   t.textContent=msg;t.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>t.style.opacity='0',dur);
 }
 
